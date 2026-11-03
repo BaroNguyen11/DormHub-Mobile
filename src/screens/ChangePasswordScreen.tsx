@@ -1,0 +1,66 @@
+import { Feather } from '@expo/vector-icons';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { StatusBar } from 'expo-status-bar';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { AppButton } from '../components/ui/AppButton';
+import { FormField } from '../components/ui/FormField';
+import { ScreenContainer } from '../components/ui/ScreenContainer';
+import { useMockAccount } from '../context/MockAccountContext';
+import { colors, typography } from '../theme';
+import type { ProfileStackParamList, RootStackParamList, StudentTabsParamList } from '../types/navigation';
+import type { ChangePasswordForm } from '../types/profile';
+import type { FieldErrors } from '../types/validation';
+import { validateChangePassword } from '../utils/validation';
+
+type Props = NativeStackScreenProps<ProfileStackParamList, 'ChangePassword'>;
+const emptyForm: ChangePasswordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+
+export function ChangePasswordScreen({ navigation }: Props) {
+  const { changePassword, logout } = useMockAccount();
+  const [form, setForm] = useState<ChangePasswordForm>(emptyForm);
+  const [errors, setErrors] = useState<FieldErrors<keyof ChangePasswordForm>>({});
+  const setField = (key: keyof ChangePasswordForm, value: string) => {
+    setForm((previous) => ({ ...previous, [key]: value }));
+    setErrors((previous) => ({ ...previous, [key]: undefined }));
+  };
+  const submit = () => {
+    const nextErrors = validateChangePassword(form);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+    const result = changePassword(form.currentPassword, form.newPassword);
+    if (result === 'incorrect') { setErrors({ currentPassword: 'Mật khẩu hiện tại không đúng' }); return; }
+    if (result === 'invalid') { setErrors({ newPassword: 'Mật khẩu mới không hợp lệ' }); return; }
+    if (result !== 'success') return;
+    setForm(emptyForm);
+    logout();
+    navigation.getParent<BottomTabNavigationProp<StudentTabsParamList>>()?.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Guest', params: { screen: 'PasswordChangeSuccess' } }] });
+  };
+
+  return <ScreenContainer>
+    <StatusBar style="dark" />
+    <View style={styles.header}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Quay lại" onPress={() => navigation.goBack()} style={styles.back}><Feather name="arrow-left" size={24} color={colors.text} /></Pressable>
+      <Text style={styles.headerTitle}>Đổi mật khẩu</Text>
+    </View>
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <View style={styles.fields}>
+        <FormField label="Mật khẩu hiện tại" value={form.currentPassword} onChangeText={(value) => setField('currentPassword', value)} placeholder="••••••••" secure autoComplete="current-password" error={errors.currentPassword} />
+        <FormField label="Mật khẩu mới" value={form.newPassword} onChangeText={(value) => setField('newPassword', value)} placeholder="Tối thiểu 8 ký tự" secure autoComplete="new-password" error={errors.newPassword} />
+        <FormField label="Xác nhận mật khẩu mới" value={form.confirmPassword} onChangeText={(value) => setField('confirmPassword', value)} placeholder="Nhập lại mật khẩu mới" secure autoComplete="new-password" error={errors.confirmPassword} />
+      </View>
+      <View style={styles.submit}><AppButton title="Cập nhật mật khẩu" onPress={submit} /></View>
+    </ScrollView>
+  </ScreenContainer>;
+}
+
+const styles = StyleSheet.create({
+  header: { height: 52, backgroundColor: colors.surface, borderBottomWidth: 0.8, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 12 },
+  back: { width: 28, height: 40, justifyContent: 'center' },
+  headerTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 18 },
+  content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 },
+  fields: { gap: 18 },
+  submit: { marginTop: 20 },
+});
