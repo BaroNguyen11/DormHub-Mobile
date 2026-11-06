@@ -1,0 +1,52 @@
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Image } from 'expo-image';
+import { StatusBar } from 'expo-status-bar';
+import { ScrollView, StyleSheet } from 'react-native';
+import { Text, YStack } from 'tamagui';
+
+import { AppButton } from '../components/ui/AppButton';
+import { ScreenContainer } from '../components/ui/ScreenContainer';
+import { colors, radius, spacing, typography } from '../theme';
+import type { GuestStackParamList } from '../types/navigation';
+import type { RootStackParamList } from '../types/navigation';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useMockAccount } from '../context/MockAccountContext';
+import { devPreviewEnabled } from '../config/devPreview';
+
+type Props = NativeStackScreenProps<GuestStackParamList, 'Welcome'>;
+
+export function WelcomeScreen({ navigation }: Props) {
+  const { activateDevAccount } = useMockAccount();
+  const enterDevPreview = () => {
+    if (!devPreviewEnabled || !activateDevAccount('student')) return;
+    navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Student' }] });
+  };
+  return (
+    <ScreenContainer>
+      <StatusBar hidden={false} style="dark" />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <YStack style={styles.main}>
+          <Image source={require('../../assets/figma/welcome-room.png')} contentFit="cover" style={styles.illustration} />
+          <YStack style={styles.copy}>
+            <Text color={colors.text} fontFamily="body" fontWeight="400" fontSize={typography.welcomeTitle} lineHeight="29px" textAlign="center">Ký túc xá của bạn,{'\n'}gọn trong một ứng dụng</Text>
+            <Text color={colors.textSecondary} fontFamily="body" fontWeight="400" fontSize={12} lineHeight="20px" textAlign="center" marginTop={8}>Tìm phòng, theo dõi hóa đơn, điện nước và gửi yêu cầu sửa chữa — tất cả tại một nơi.</Text>
+          </YStack>
+        </YStack>
+        <YStack style={styles.actions}>
+          <AppButton title="Đăng nhập" onPress={() => navigation.navigate('Login')} />
+          <AppButton title="Đăng ký" variant="outline" onPress={() => navigation.navigate('Register')} />
+          <AppButton title="Khám phá phòng" variant="text" onPress={() => navigation.navigate('Explore')} />
+          {devPreviewEnabled ? <AppButton title="Xem thử giao diện (Dev)" variant="text" onPress={enterDevPreview} /> : null}
+        </YStack>
+      </ScrollView>
+    </ScreenContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: { alignItems: 'center', paddingTop: spacing.welcomeTop, paddingHorizontal: 16, paddingBottom: 28 },
+  main: { width: '100%', maxWidth: 303 },
+  illustration: { width: '100%', height: 220, borderRadius: radius.card },
+  copy: { marginTop: 16, height: 107, alignItems: 'center' },
+  actions: { width: '100%', maxWidth: 303, gap: spacing.buttonGap, marginTop: spacing.welcomeSectionGap },
+});
