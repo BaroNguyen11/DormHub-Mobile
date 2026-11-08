@@ -1,13 +1,14 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Text, YStack } from 'tamagui';
 
 import { colors, typography } from '../../theme';
 
 export function EmptyState() {
   return (
-    <View style={styles.container}>
+    <YStack style={styles.container}>
       <Text style={styles.title}>Không tìm thấy phòng phù hợp</Text>
       <Text style={styles.body}>Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm.</Text>
-    </View>
+    </YStack>
   );
 }
 

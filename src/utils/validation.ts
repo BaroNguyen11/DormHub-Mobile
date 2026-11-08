@@ -50,10 +50,16 @@ export function validateProfileEdit(form: ProfileEditForm): FieldErrors<'fullNam
   return errors;
 }
 
+export function validateStudentPhone(phone: string): string | undefined {
+  if (!phone) return 'Vui lòng nhập số điện thoại. Không thể xóa số điện thoại ở phiên bản này.';
+  return /^(0|\+84)[35789][0-9]{8}$/.test(phone) ? undefined : 'Số điện thoại không hợp lệ';
+}
+
 export function validateChangePassword(form: ChangePasswordForm): FieldErrors<keyof ChangePasswordForm> {
   const errors: FieldErrors<keyof ChangePasswordForm> = {};
   if (!form.currentPassword) errors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại';
   if (form.newPassword.length < 8) errors.newPassword = 'Mật khẩu mới cần ít nhất 8 ký tự';
+  else if (form.newPassword.length > 50) errors.newPassword = 'Mật khẩu mới không được vượt quá 50 ký tự';
   if (form.newPassword === form.currentPassword && form.newPassword) errors.newPassword = 'Mật khẩu mới phải khác mật khẩu hiện tại';
   if (form.confirmPassword !== form.newPassword) errors.confirmPassword = 'Mật khẩu xác nhận không khớp';
   return errors;

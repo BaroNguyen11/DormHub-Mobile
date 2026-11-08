@@ -1,4 +1,4 @@
-import { defaultConfig } from '@tamagui/config/v6';
+import { defaultConfig, withTailwindTypeScale } from '@tamagui/config/v6';
 import { createFont, createTamagui } from 'tamagui';
 
 import { colors, radius, spacing, typography } from './src/theme';
@@ -26,7 +26,7 @@ const roboto = createFont({
 export const tamaguiConfig = createTamagui({
   ...defaultConfig,
   settings: { ...defaultConfig.settings, onlyAllowShorthands: false },
-  fonts: { ...defaultConfig.fonts, body: roboto, heading: roboto },
+  fonts: { ...defaultConfig.fonts, body: withTailwindTypeScale(roboto), heading: withTailwindTypeScale(roboto) },
   tokens: {
     ...defaultConfig.tokens,
     color: { ...defaultConfig.tokens.color, ...colors },

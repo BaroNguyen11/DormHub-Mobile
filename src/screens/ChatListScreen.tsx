@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text as TamaText, XStack, YStack } from 'tamagui';
 
 import { ChatPartnerAvatar } from '../components/ui/ChatUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
@@ -24,22 +25,22 @@ export function ChatListScreen({ navigation }: Props) {
     const recent = lastChatMessage(item);
     return <Pressable accessibilityRole="button" onPress={() => navigation.navigate('ChatMessage', { conversationId: item.id })} style={styles.row}>
       <ChatPartnerAvatar type={item.type} />
-      <View style={styles.copy}>
+      <YStack style={styles.copy}>
         <Text style={styles.name}>{item.title}</Text>
         <Text style={styles.preview} numberOfLines={1}>
           {recent ? `${recent.sender === 'STUDENT' ? 'Bạn: ' : ''}${recent.text} · ${chatHourLabel(recent.createdAt)}` : 'Chưa có tin nhắn'}
         </Text>
-      </View>
+      </YStack>
     </Pressable>;
   };
 
   return <ScreenContainer>
     <StatusBar style="dark" />
-    <View style={styles.header}>
+    <XStack style={styles.header}>
       <Pressable accessibilityRole="button" accessibilityLabel="Quay lại" onPress={() => navigation.getParent()?.goBack()} style={styles.back}><Feather name="arrow-left" size={24} color={colors.text} /></Pressable>
       <Text style={styles.headerTitle}>Tin nhắn</Text>
-    </View>
-    <FlatList data={ordered} keyExtractor={(item) => item.id} renderItem={renderConversation} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false} ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyTitle}>Chưa có cuộc trò chuyện</Text><Text style={styles.emptyBody}>Tin nhắn mới sẽ xuất hiện tại đây.</Text></View>} />
+    </XStack>
+    <FlatList data={ordered} keyExtractor={(item) => item.id} renderItem={renderConversation} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false} ListEmptyComponent={<YStack style={styles.empty}><TamaText style={styles.emptyTitle}>Chưa có cuộc trò chuyện</TamaText><TamaText style={styles.emptyBody}>Tin nhắn mới sẽ xuất hiện tại đây.</TamaText></YStack>} />
   </ScreenContainer>;
 }
 

@@ -37,7 +37,7 @@ export type HomeStackParamList = {
 
 export type InvoiceStackParamList = {
   InvoiceList: undefined;
-  InvoiceDetail: { invoiceId: string };
+  InvoiceDetail: { invoiceId: string; paymentError?: string };
   PaymentProcessing: { invoiceId: string; method: PaymentMethod };
   PaymentSuccess: { paymentId: string };
   PaymentHistory: undefined;

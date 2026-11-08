@@ -1,7 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import { Text as TamaText, XStack, YStack } from 'tamagui';
 import { repairCategories, repairPriorities, repairStatusLabels } from '../../mocks/repairs';
 import { colors, radius, typography } from '../../theme';
 import type { RepairCategory, RepairRequest } from '../../types/repair';
@@ -12,19 +13,19 @@ export function RepairCategoryIcon({ category, status }: { category: RepairCateg
   const cancelled = status === 'CANCELLED';
   const background = cancelled ? colors.rejectionBackground : category === 'ELECTRIC' ? colors.limitedBackground : category === 'WATER' ? colors.waterIconBackground : category === 'AIR_CONDITIONER' ? colors.fullBackground : colors.availableBackground;
   const color = cancelled ? colors.error : category === 'ELECTRIC' ? colors.limitedText : category === 'WATER' ? colors.repairProgressText : category === 'AIR_CONDITIONER' ? colors.textSecondary : colors.availableText;
-  return <View style={[styles.categoryIcon, { backgroundColor: background }]}><Feather name={icons[category]} size={20} color={color} /></View>;
+  return <YStack style={[styles.categoryIcon, { backgroundColor: background }]}><Feather name={icons[category]} size={20} color={color} /></YStack>;
 }
 
 export function RepairStatusBadge({ status }: { status: RepairRequest['status'] }) {
   const background = status === 'IN_PROGRESS' ? colors.repairProgressBackground : status === 'RECEIVED' ? colors.limitedBackground : status === 'COMPLETED' ? colors.availableBackground : colors.fullBackground;
   const color = status === 'IN_PROGRESS' ? colors.repairProgressText : status === 'RECEIVED' ? colors.limitedText : status === 'COMPLETED' ? colors.availableText : colors.textSecondary;
-  return <View style={[styles.badge, { backgroundColor: background }]}><Text style={[styles.badgeText, { color }]}>{repairStatusLabels[status]}</Text></View>;
+  return <XStack style={[styles.badge, { backgroundColor: background }]}><TamaText style={[styles.badgeText, { color }]}>{repairStatusLabels[status]}</TamaText></XStack>;
 }
 
 export function RepairRequestRow({ request, variant, onPress }: { request: RepairRequest; variant: 'current' | 'history'; onPress?: () => void }) {
   const priority = repairPriorities.find((item) => item.id === request.priority)?.label.toLowerCase();
   const subtitle = variant === 'current' ? `${request.id} · ${request.createdDate}` : request.status === 'CANCELLED' ? `${request.createdDate} · Đã hủy` : `${request.createdDate} · Ưu tiên ${priority}`;
-  return <Pressable disabled={!onPress} onPress={onPress} style={styles.row}><RepairCategoryIcon category={request.category} status={request.status} /><View style={styles.rowCopy}><Text style={styles.rowTitle} numberOfLines={2}>{request.title}</Text><Text style={styles.rowSubtitle}>{subtitle}</Text></View><RepairStatusBadge status={request.status} /></Pressable>;
+  return <Pressable disabled={!onPress} onPress={onPress} style={styles.row}><RepairCategoryIcon category={request.category} status={request.status} /><YStack style={styles.rowCopy}><TamaText style={styles.rowTitle} numberOfLines={2}>{request.title}</TamaText><TamaText style={styles.rowSubtitle}>{subtitle}</TamaText></YStack><RepairStatusBadge status={request.status} /></Pressable>;
 }
 
 export function RepairAttachment({ uri, size = 60 }: { uri?: string; size?: number }) {

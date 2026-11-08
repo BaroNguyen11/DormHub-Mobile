@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Button, Text } from 'tamagui';
 
 import { colors, radius, typography } from '../../theme';
 
@@ -6,9 +7,7 @@ interface Props { label: string; selected: boolean; onPress: () => void }
 
 export function FilterChip({ label, selected, onPress }: Props) {
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} style={[styles.chip, selected && styles.selected]}>
-      <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
-    </Pressable>
+    <Button size={false} accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} style={[styles.chip, selected && styles.selected]}><Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text></Button>
   );
 }
 

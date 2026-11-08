@@ -2,6 +2,16 @@ import type { InvoiceDetail, Payment, PaymentMethod } from '../types/invoice';
 import { sumLineItems } from './invoice';
 
 export interface PaymentTransition { invoices: readonly InvoiceDetail[]; payments: readonly Payment[]; payment: Payment }
+export function applyFailedMockPayment(
+  invoices: readonly InvoiceDetail[], payments: readonly Payment[],
+  invoiceId: string, method: PaymentMethod, transactionId: string, date: string, time: string,
+): PaymentTransition | null {
+  const invoice = invoices.find((item) => item.id === invoiceId);
+  if (!invoice || invoice.status !== 'UNPAID' || invoice.totalAmount !== sumLineItems(invoice.lineItems)) return null;
+  const payment: Payment = { id: transactionId, invoiceId, invoiceTitle: invoice.title, amount: invoice.totalAmount, method, status: 'FAILED', date, time };
+  return { invoices, payments: [payment, ...payments], payment };
+}
+
 export function applySuccessfulPayment(
   invoices: readonly InvoiceDetail[], payments: readonly Payment[],
   invoiceId: string, method: PaymentMethod, transactionId: string, date: string, time: string,

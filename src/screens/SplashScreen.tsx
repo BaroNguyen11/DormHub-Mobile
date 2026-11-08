@@ -1,26 +1,10 @@
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { Text, YStack } from 'tamagui';
 
-import { mockSession } from '../mocks/session';
-import { devPreviewEnabled } from '../config/devPreview';
 import { colors, radius, typography } from '../theme';
-import type { RootStackParamList } from '../types/navigation';
-
-type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
-
-export function SplashScreen({ navigation }: Props) {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (devPreviewEnabled && mockSession.kind === 'student') navigation.replace('Student');
-      else navigation.replace('Guest');
-    }, 1100);
-    return () => clearTimeout(timer);
-  }, [navigation]);
-
+export function SplashScreen() {
   return (
     <YStack style={styles.screen}>
       <StatusBar hidden />

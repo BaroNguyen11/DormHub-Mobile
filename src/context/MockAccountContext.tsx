@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { devPreviewEnabled } from '../config/devPreview';
 import { devPreviewAccounts } from '../mocks/auth';
@@ -14,11 +14,12 @@ import { useResidence } from './ResidenceContext';
 
 interface MockAccountContextValue {
   accountId: DevPreviewAccountId | null;
+  postLogoutDestination: 'Welcome' | 'PasswordChangeSuccess';
   profile: AccountProfile | null;
   authenticate: (form: LoginForm) => MockLoginResult;
-  updateProfile: (form: ProfileEditForm) => void;
+  updateProfile: (form: ProfileEditForm, expectedAccountId: DevPreviewAccountId) => boolean;
   changePassword: (currentPassword: string, newPassword: string) => 'success' | 'incorrect' | 'invalid' | 'unavailable';
-  logout: () => void;
+  logout: (destination?: 'Welcome' | 'PasswordChangeSuccess') => void;
   activateAuthenticatedAccount: (result: Extract<MockLoginResult, { kind: 'success' }>) => void;
   activateDevAccount: (accountId: DevPreviewAccountId) => boolean;
 }
@@ -30,6 +31,8 @@ export function MockAccountProvider({ children }: PropsWithChildren) {
   const { resetForAccount: resetRepairs } = useRepairs();
   const { resetForAccount: resetNotifications } = useNotifications();
   const [accountId, setAccountId] = useState<DevPreviewAccountId | null>(null);
+  const [postLogoutDestination, setPostLogoutDestination] = useState<'Welcome' | 'PasswordChangeSuccess'>('Welcome');
+  const accountIdRef = useRef<DevPreviewAccountId | null>(null);
   const [profiles, setProfiles] = useState<Record<DevPreviewAccountId, AccountProfile>>(() => ({
     student: { ...initialProfiles.student },
     newstudent: { ...initialProfiles.newstudent },
@@ -38,19 +41,22 @@ export function MockAccountProvider({ children }: PropsWithChildren) {
   // Demo credentials live only in React memory. They are not persisted or logged.
   const [passwordOverrides, setPasswordOverrides] = useState<Partial<Record<DevPreviewAccountId, string>>>({});
   const activate = useCallback((id: DevPreviewAccountId, status: ResidenceStatus) => {
+    setPostLogoutDestination('Welcome');
     resetInvoices(status);
     resetRepairs(status);
     resetNotifications(id);
     setStatus(status);
+    accountIdRef.current = id;
     setAccountId(id);
   }, [resetInvoices, resetRepairs, resetNotifications, setStatus]);
   const activateAuthenticatedAccount = useCallback((result: Extract<MockLoginResult, { kind: 'success' }>) => {
     activate(result.accountId, result.residenceStatus);
   }, [activate]);
   const authenticate = useCallback((form: LoginForm) => simulateLogin(form, passwordOverrides), [passwordOverrides]);
-  const updateProfile = useCallback((form: ProfileEditForm) => {
-    if (!accountId) return;
+  const updateProfile = useCallback((form: ProfileEditForm, expectedAccountId: DevPreviewAccountId): boolean => {
+    if (!accountId || accountIdRef.current !== expectedAccountId || accountId !== expectedAccountId) return false;
     setProfiles((previous) => ({ ...previous, [accountId]: { ...previous[accountId], ...form } }));
+    return true;
   }, [accountId]);
   const changePassword = useCallback((currentPassword: string, newPassword: string) => {
     if (!accountId) return 'unavailable';
@@ -60,11 +66,13 @@ export function MockAccountProvider({ children }: PropsWithChildren) {
     setPasswordOverrides((previous) => ({ ...previous, [accountId]: newPassword }));
     return 'success';
   }, [accountId, passwordOverrides]);
-  const logout = useCallback(() => {
+  const logout = useCallback((destination: 'Welcome' | 'PasswordChangeSuccess' = 'Welcome') => {
+    setPostLogoutDestination(destination);
     resetInvoices('none');
     resetRepairs('none');
     resetNotifications(null);
     setStatus('none');
+    accountIdRef.current = null;
     setAccountId(null);
   }, [resetInvoices, resetRepairs, resetNotifications, setStatus]);
   const activateDevAccount = useCallback((id: DevPreviewAccountId): boolean => {
@@ -75,7 +83,7 @@ export function MockAccountProvider({ children }: PropsWithChildren) {
     return true;
   }, [activate]);
   const profile = accountId ? profiles[accountId] : null;
-  return <MockAccountContext.Provider value={{ accountId, profile, authenticate, updateProfile, changePassword, logout, activateAuthenticatedAccount, activateDevAccount }}>{children}</MockAccountContext.Provider>;
+  return <MockAccountContext.Provider value={{ accountId, postLogoutDestination, profile, authenticate, updateProfile, changePassword, logout, activateAuthenticatedAccount, activateDevAccount }}>{children}</MockAccountContext.Provider>;
 }
 
 export function useMockAccount() { const value = useContext(MockAccountContext); if (!value) throw new Error('MockAccountProvider is missing'); return value; }

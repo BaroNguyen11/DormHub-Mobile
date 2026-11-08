@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Input, XStack } from 'tamagui';
 
 import { colors, radius, typography } from '../../theme';
 
@@ -11,15 +12,17 @@ interface Props {
 
 export function SearchBar({ value, onChangeText, onFilterPress }: Props) {
   return (
-    <View style={styles.container}>
+    <XStack style={styles.container}>
       <View style={styles.searchIcon}>
         <Image source={require('../../../assets/figma/search-circle.svg')} style={styles.searchPiece} />
         <Image source={require('../../../assets/figma/search-handle.svg')} style={styles.searchPiece} />
       </View>
-      <TextInput
+      <Input size={false}
+        borderWidth={0}
+        backgroundColor="transparent"
         accessibilityLabel="Tìm theo tòa, số phòng"
         placeholder="Tìm theo tòa, số phòng..."
-        placeholderTextColor={colors.placeholder}
+        placeholderTextColor="placeholder"
         value={value}
         onChangeText={onChangeText}
         style={styles.input}
@@ -28,7 +31,7 @@ export function SearchBar({ value, onChangeText, onFilterPress }: Props) {
         <Image source={require('../../../assets/figma/filter-lines.svg')} style={styles.filterPiece} />
         <Image source={require('../../../assets/figma/filter-knobs.svg')} style={styles.filterPiece} />
       </Pressable>
-    </View>
+    </XStack>
   );
 }
 
