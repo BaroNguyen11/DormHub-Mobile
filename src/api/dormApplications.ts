@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { apiClient, getApiErrorMessage } from './client';
 
 interface ApiEnvelope<T> {
@@ -56,6 +57,28 @@ export interface DormApplicationPage {
   totalPages: number;
 }
 
+const applicationErrors: Readonly<Record<string, string>> = {
+  STUDENT_PROFILE_INCOMPLETE: 'Vui lòng hoàn thiện hồ sơ sinh viên trước khi đăng ký phòng.',
+  DORM_APPLICATION_GENDER_UNSUPPORTED: 'Hồ sơ giới tính chưa phù hợp để đăng ký phòng.',
+  ROOM_GENDER_POLICY_REQUIRED: 'Phòng này tạm thời chưa thể đăng ký.',
+  ROOM_GENDER_POLICY_MISMATCH: 'Phòng này không phù hợp với giới tính trong hồ sơ của bạn.',
+  ROOM_FULL: 'Phòng đã hết chỗ. Vui lòng chọn phòng khác.',
+  ROOM_NOT_AVAILABLE: 'Phòng này hiện không thể đăng ký.',
+  ROOM_NOT_FOUND: 'Không tìm thấy phòng đã chọn.',
+  DORM_APPLICATION_ALREADY_ACTIVE: 'Bạn đã có đơn đăng ký đang được xử lý.',
+  DORM_APPLICATION_ROOM_REQUIRED: 'Vui lòng chọn phòng trước khi đăng ký.',
+  DORM_APPLICATION_NOT_PENDING: 'Chỉ có thể thay đổi hoặc hủy đơn đang chờ duyệt.',
+};
+
+function applicationErrorMessage(error: unknown): string {
+  if (axios.isAxiosError<ApiEnvelope<unknown>>(error)) {
+    const code = error.response?.data?.code;
+    if (code && Object.prototype.hasOwnProperty.call(applicationErrors, code)) return applicationErrors[code];
+    if (error.response?.status === 409) return 'Thông tin phòng hoặc đơn đăng ký đã thay đổi. Vui lòng tải lại và thử lại.';
+  }
+  return getApiErrorMessage(error, 'Không thể xử lý đơn đăng ký. Vui lòng thử lại.');
+}
+
 function unwrap<T>(response: ApiEnvelope<T>): T {
   if (response.code !== 'SUCCESS' || response.data == null) {
     throw new Error(response.message || 'Dorm application request failed.');
@@ -101,24 +124,24 @@ export async function createStudentDormApplication(roomId: number, note?: string
     const response = await apiClient.post<ApiEnvelope<DormApplicationDto>>('/student/dorm-applications', { roomId, ...(note?.trim() ? { note: note.trim() } : {}) }, { headers: { 'X-XSRF-TOKEN': token } });
     return unwrap(response.data);
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, 'Could not submit dorm application.'));
+    throw new Error(applicationErrorMessage(error));
   }
 }
 
-export async function changeStudentDormApplicationRoom(id: number, roomId: number): Promise<void> {
+export async function changeStudentDormApplicationRoom(id: number, roomId: number): Promise<DormApplicationDto> {
   try {
-    const response = await patchWithCsrf<ApiEnvelope<unknown>>(`/student/dorm-applications/${id}/room`, { roomId });
-    if (response.code !== 'SUCCESS') throw new Error(response.message || 'Could not change requested room.');
+    const response = await patchWithCsrf<ApiEnvelope<DormApplicationDto>>(`/student/dorm-applications/${id}/room`, { roomId });
+    return unwrap(response);
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, 'Could not change requested room.'));
+    throw new Error(applicationErrorMessage(error));
   }
 }
 
-export async function cancelStudentDormApplication(id: number): Promise<void> {
+export async function cancelStudentDormApplication(id: number): Promise<DormApplicationDto> {
   try {
-    const response = await patchWithCsrf<ApiEnvelope<null>>(`/student/dorm-applications/${id}/cancel`);
-    if (response.code !== 'SUCCESS') throw new Error(response.message || 'Could not cancel dorm application.');
+    const response = await patchWithCsrf<ApiEnvelope<DormApplicationDto>>(`/student/dorm-applications/${id}/cancel`);
+    return unwrap(response);
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, 'Could not cancel dorm application.'));
+    throw new Error(applicationErrorMessage(error));
   }
 }

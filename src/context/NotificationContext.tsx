@@ -1,8 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { getNotifications, getUnreadNotificationCount, markAllNotificationsReadOnServer, markNotificationReadOnServer } from '../api/notifications';
-import { initialNotifications } from '../mocks/notifications';
-import type { DevPreviewAccountId } from '../types/auth';
 import type { AppNotification } from '../types/notification';
 import { markAllNotificationsRead, markNotificationRead } from '../utils/notification';
 
@@ -16,7 +14,7 @@ interface NotificationContextValue {
   markAllRead: () => void;
   loadMore: () => void;
   refresh: () => void;
-  resetForAccount: (accountId: DevPreviewAccountId | null, backendAccount?: boolean) => void;
+  resetForAccount: (authenticated: boolean) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -67,11 +65,6 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   const markRead = useCallback((id: string) => {
     const item = notifications.find((notification) => notification.id === id);
     if (!item || item.isRead) return;
-    if (!backendAccountRef.current) {
-      setNotifications((previous) => markNotificationRead(previous, id));
-      setUnreadCount((previous) => Math.max(0, previous - 1));
-      return;
-    }
     const epoch = accountEpochRef.current;
     void (async () => {
       try {
@@ -101,8 +94,6 @@ export function NotificationProvider({ children }: PropsWithChildren) {
       })();
       return;
     }
-    setNotifications((previous) => markAllNotificationsRead(previous));
-    setUnreadCount(0);
   }, [unreadCount]);
 
   const loadMore = useCallback(() => {
@@ -112,24 +103,21 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     pageRef.current = 0;
     void loadPage(0, true);
   }, [loadPage]);
-  const resetForAccount = useCallback((accountId: DevPreviewAccountId | null, backendAccount = false) => {
+  const resetForAccount = useCallback((authenticated: boolean) => {
     accountEpochRef.current += 1;
     loadingEpochRef.current = null;
     setIsLoading(false);
-    backendAccountRef.current = backendAccount;
+    backendAccountRef.current = authenticated;
     pageRef.current = 0;
     setError(null);
     setHasMore(false);
     setUnreadCount(0);
-    if (backendAccount) {
+    if (authenticated) {
       setNotifications([]);
       void loadPage(0, true);
       return;
     }
-    setIsLoading(false);
-    const previewNotifications = accountId === 'student' ? initialNotifications.map((item) => ({ ...item, emphasis: item.emphasis ? [...item.emphasis] : undefined })) : [];
-    setNotifications(previewNotifications);
-    setUnreadCount(previewNotifications.filter((item) => !item.isRead).length);
+    setNotifications([]);
   }, [loadPage]);
 
   return <NotificationContext.Provider value={{ notifications, unreadCount, isLoading, hasMore, error, markRead, markAllRead, loadMore, refresh, resetForAccount }}>{children}</NotificationContext.Provider>;

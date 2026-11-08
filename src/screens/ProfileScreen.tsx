@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ProfileAvatar, ProfileMenuRow } from '../components/ui/ProfileUi';
@@ -10,25 +10,33 @@ import { SurfaceCard } from '../components/ui/ResidenceUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
 import { useMockAccount } from '../context/MockAccountContext';
 import { useResidence } from '../context/ResidenceContext';
-import { residentRoom } from '../mocks/residence';
 import { colors, typography } from '../theme';
 import type { ProfileStackParamList, RootStackParamList, StudentTabsParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>;
 
 export function ProfileScreen({ navigation }: Props) {
-  const { profile, logout, refreshProfile, isAuthenticated, accountId } = useMockAccount();
+  const { profile, logout, refreshProfile, isAuthenticated } = useMockAccount();
   const { session } = useResidence();
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const tabs = navigation.getParent<BottomTabNavigationProp<StudentTabsParamList>>();
   const hasRoom = session.status === 'active' && !!session.roomId;
+  const loadProfile = useCallback(async () => {
+    setProfileLoading(true);
+    setProfileError(null);
+    try { await refreshProfile(); }
+    catch (error) { setProfileError(error instanceof Error ? error.message : 'Không tải được hồ sơ.'); }
+    finally { setProfileLoading(false); }
+  }, [refreshProfile]);
   useEffect(() => {
-    if (isAuthenticated && !accountId) void refreshProfile().catch(() => undefined);
-  }, [accountId, isAuthenticated, refreshProfile]);
-  const unavailable = () => Alert.alert('Chưa hỗ trợ', 'Mục này chưa có trong bản xem thử.');
+    if (isAuthenticated) void loadProfile();
+  }, [isAuthenticated, loadProfile]);
+  const unavailable = () => Alert.alert('Chưa thể sử dụng', 'Chức năng này tạm thời chưa thể sử dụng. Vui lòng thử lại sau.');
   const signOut = async () => {
     const serverLogoutSucceeded = await logout();
     tabs?.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Guest', params: { screen: 'Welcome' } }] });
-    if (!serverLogoutSucceeded) Alert.alert('Chưa xác nhận đăng xuất', 'Ứng dụng đã thoát tài khoản, nhưng backend chưa xác nhận thu hồi phiên. Hãy kiểm tra kết nối.');
+    if (!serverLogoutSucceeded) Alert.alert('Chưa xác nhận đăng xuất', 'Chưa thể xác nhận đăng xuất trên máy chủ. Vui lòng kiểm tra kết nối và thử lại.');
   };
 
   if (!profile) return <ScreenContainer><Text style={styles.missing}>Không có thông tin tài khoản.</Text></ScreenContainer>;
@@ -37,11 +45,13 @@ export function ProfileScreen({ navigation }: Props) {
     <StatusBar style="dark" />
     <View style={styles.header}><Text style={styles.headerTitle}>Cá nhân</Text></View>
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      {profileLoading ? <Text style={styles.studentMeta}>Đang tải hồ sơ...</Text> : null}
+      {profileError ? <Pressable onPress={() => void loadProfile()}><Text style={styles.studentMeta}>{profileError} Chạm để thử lại.</Text></Pressable> : null}
       <Pressable accessibilityRole="button" onPress={() => navigation.navigate('EditProfile')} style={styles.identity}>
         <ProfileAvatar profile={profile} size={60} />
         <View style={styles.identityCopy}>
           <Text style={styles.name}>{profile.fullName || 'Chưa cập nhật tên'}</Text>
-          <Text style={styles.studentMeta}>MSSV: {profile.studentId ?? 'Chưa cập nhật'} · SV Approved</Text>
+          <Text style={styles.studentMeta}>MSSV: {profile.studentId ?? 'Chưa cập nhật'}</Text>
         </View>
         <Feather name="chevron-right" size={20} color={colors.inactiveTab} />
       </Pressable>
@@ -65,7 +75,7 @@ export function ProfileScreen({ navigation }: Props) {
 
       <Text style={styles.sectionTitle}>Ký túc xá</Text>
       <SurfaceCard style={styles.card}>
-        <ProfileMenuRow icon="inbox" title="Phòng hiện tại" subtitle={hasRoom ? (session.backendRoomId != null ? `ID phòng ${session.backendRoomId}` : `${session.roomId} · ${residentRoom.building}`) : `Chưa có phòng hiện tại`} onPress={() => tabs?.navigate('Room', { screen: hasRoom ? 'MyRoom' : 'Residence' })} />
+        <ProfileMenuRow icon="inbox" title="Phòng hiện tại" subtitle={hasRoom ? 'Xem thông tin cư trú' : 'Chưa có phòng hiện tại'} onPress={() => tabs?.navigate('Room', { screen: hasRoom ? 'MyRoom' : 'Residence' })} />
         <ProfileMenuRow icon="file-text" title="Hợp đồng" subtitle={hasRoom ? undefined : 'Chưa có hợp đồng'} onPress={hasRoom ? () => tabs?.navigate('Room', { screen: 'Contract' }) : undefined} last />
       </SurfaceCard>
 

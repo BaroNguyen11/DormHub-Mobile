@@ -1,7 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import type { ComponentProps, PropsWithChildren } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { studentProfile, utilityOverview } from '../../mocks/residence';
 import { useMockAccount } from '../../context/MockAccountContext';
 import { colors, radius, typography } from '../../theme';
 import { ProfileAvatar } from './ProfileUi';
@@ -15,10 +14,10 @@ export function StudentHeader({ onMessage }: { onMessage?: () => void }) {
     {profile ? <ProfileAvatar profile={profile} size={44} /> : <View style={styles.avatar} />}
     <View style={styles.studentCopy}>
       <Text style={styles.studentName}>Xin chào, {displayName} 👋</Text>
-      <Text style={styles.studentDate}>{studentProfile.greetingDate}</Text>
+      <Text style={styles.studentDate}>{new Date().toLocaleDateString('vi-VN')}</Text>
     </View>
     <Pressable accessibilityRole={onMessage ? 'button' : undefined} accessibilityLabel={onMessage ? 'Tin nhắn' : undefined} disabled={!onMessage} onPress={onMessage} style={styles.message}>
-      <Feather name="message-circle" size={24} color={colors.text} /><View style={styles.dot} />
+      <Feather name="message-circle" size={24} color={colors.text} />
     </Pressable>
   </View>;
 }
@@ -31,7 +30,6 @@ export function DetailRow({ label, value, last = false }: { label: string; value
 
 export function SurfaceCard({ children, style }: PropsWithChildren<{ style?: object }>) { return <View style={[styles.surfaceCard, style]}>{children}</View>; }
 
-export function UtilityMiniCard({ kind }: { kind: 'electricity' | 'water' }) { const electricity = kind === 'electricity'; const value = electricity ? `${utilityOverview.electricityKwh} kWh` : `${utilityOverview.waterM3} m³`; const delta = electricity ? `+${utilityOverview.electricityKwh - utilityOverview.previousElectricityKwh} kWh so với tháng trước` : 'Không thay đổi'; return <SurfaceCard style={styles.utilityMini}><View style={styles.utilityHeading}><Feather name={electricity ? 'zap' : 'droplet'} size={17} color={electricity ? '#C67A14' : '#2674C6'} /><Text style={styles.utilityLabel}>{electricity ? 'Điện' : 'Nước'}</Text></View><Text style={styles.utilityValue}>{value}</Text><Text style={[styles.utilityDelta, electricity && styles.increase]}>{delta}</Text></SurfaceCard>; }
 
 export function IconTile({ icon, label, onPress }: { icon: Icon; label: string; onPress?: () => void }) { return <Pressable style={styles.iconTile} disabled={!onPress} onPress={onPress}><View style={styles.iconBox}><Feather name={icon} size={21} color={colors.primary} /></View><Text style={styles.iconLabel}>{label}</Text></Pressable>; }
 

@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { additionalRepairCategories, repairCategories, repairPriorities, repairStatusLabels } from '../../mocks/repairs';
+import { additionalRepairCategories, repairCategories, repairPriorities, repairStatusLabels } from '../../config/repairOptions';
 import { colors, radius, typography } from '../../theme';
 import type { RepairCategory, RepairRequest } from '../../types/repair';
 

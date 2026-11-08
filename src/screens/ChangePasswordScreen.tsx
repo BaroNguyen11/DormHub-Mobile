@@ -19,12 +19,11 @@ type Props = NativeStackScreenProps<ProfileStackParamList, 'ChangePassword'>;
 const emptyForm: ChangePasswordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
 
 export function ChangePasswordScreen({ navigation }: Props) {
-  const { changePassword, logout, isAuthenticated, accountId } = useMockAccount();
+  const { changePassword } = useMockAccount();
   const [form, setForm] = useState<ChangePasswordForm>(emptyForm);
   const [errors, setErrors] = useState<FieldErrors<keyof ChangePasswordForm>>({});
   const [serverError, setServerError] = useState<string>();
   const [loading, setLoading] = useState(false);
-  const backendAccount = isAuthenticated && accountId === null;
   const setField = (key: keyof ChangePasswordForm, value: string) => {
     setForm((previous) => ({ ...previous, [key]: value }));
     setErrors((previous) => ({ ...previous, [key]: undefined }));
@@ -37,17 +36,9 @@ export function ChangePasswordScreen({ navigation }: Props) {
     setLoading(true);
     setServerError(undefined);
     try {
-      const result = await changePassword(form.currentPassword, form.newPassword);
-      if (result === 'incorrect') { setErrors({ currentPassword: 'Mật khẩu hiện tại không đúng.' }); return; }
-      if (result === 'invalid') { setErrors({ newPassword: 'Mật khẩu mới không hợp lệ.' }); return; }
-      if (result !== 'success') return;
+      await changePassword(form.currentPassword, form.newPassword);
       setForm(emptyForm);
-      if (backendAccount) {
-        Alert.alert('Đổi mật khẩu thành công', 'Mật khẩu của bạn đã được cập nhật.', [{ text: 'Đóng', onPress: () => navigation.goBack() }]);
-        return;
-      }
-      await logout();
-      navigation.getParent<BottomTabNavigationProp<StudentTabsParamList>>()?.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Guest', params: { screen: 'PasswordChangeSuccess' } }] });
+      Alert.alert('Đổi mật khẩu thành công', 'Mật khẩu của bạn đã được cập nhật.', [{ text: 'Đóng', onPress: () => navigation.goBack() }]);
     } catch (error) {
       setServerError(error instanceof Error ? error.message : 'Không thể đổi mật khẩu. Vui lòng thử lại.');
     } finally {

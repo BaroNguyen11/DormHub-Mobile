@@ -13,7 +13,7 @@ import type { HomeStackParamList } from '../types/navigation';
 export function RepairHistoryScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const { requests, isLoading, hasMoreRequests, error, loadMoreRequests } = useRepairs();
-  const history = requests.filter((item) => item.collection === 'history' || item.createdInSession);
+  const history = requests.filter((item) => item.collection === 'history');
   return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Lịch sử tạo phiếu" onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
     {isLoading ? <Text style={styles.empty}>Đang tải yêu cầu...</Text> : null}
     {error ? <Text style={styles.empty}>{error}</Text> : null}

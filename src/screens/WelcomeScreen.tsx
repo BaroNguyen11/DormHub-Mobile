@@ -8,19 +8,10 @@ import { AppButton } from '../components/ui/AppButton';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
 import { colors, radius, spacing, typography } from '../theme';
 import type { GuestStackParamList } from '../types/navigation';
-import type { RootStackParamList } from '../types/navigation';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMockAccount } from '../context/MockAccountContext';
-import { devPreviewEnabled } from '../config/devPreview';
 
 type Props = NativeStackScreenProps<GuestStackParamList, 'Welcome'>;
 
 export function WelcomeScreen({ navigation }: Props) {
-  const { activateDevAccount } = useMockAccount();
-  const enterDevPreview = () => {
-    if (!devPreviewEnabled || !activateDevAccount('student')) return;
-    navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Student' }] });
-  };
   return (
     <ScreenContainer>
       <StatusBar hidden={false} style="dark" />
@@ -34,9 +25,7 @@ export function WelcomeScreen({ navigation }: Props) {
         </YStack>
         <YStack style={styles.actions}>
           <AppButton title="Đăng nhập" onPress={() => navigation.navigate('Login')} />
-          <AppButton title="Đăng ký" variant="outline" onPress={() => navigation.navigate('Register')} />
           <AppButton title="Khám phá phòng" variant="text" onPress={() => navigation.navigate('Explore')} />
-          {devPreviewEnabled ? <AppButton title="Xem thử giao diện (Dev)" variant="text" onPress={enterDevPreview} /> : null}
         </YStack>
       </ScrollView>
     </ScreenContainer>

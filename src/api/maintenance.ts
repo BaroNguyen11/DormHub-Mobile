@@ -86,7 +86,7 @@ export function mapMaintenance(dto: MaintenanceDto): RepairRequest {
     status: mapMaintenanceStatus(dto.status),
     createdDate: created.date,
     createdTime: created.time,
-    receivedDate: dto.status === 'PENDING' ? undefined : created.date,
+    receivedDate: undefined,
     imageUris: dto.imageUrl ? [dto.imageUrl] : [],
     collection: dto.status === 'COMPLETED' || dto.status === 'REJECTED' ? 'history' : 'current',
     rejectionReason: dto.rejectionReason ?? undefined,

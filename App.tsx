@@ -5,10 +5,8 @@ import { TamaguiProvider } from "tamagui";
 
 import { RootStack } from "./src/navigation/RootStack";
 import { ResidenceProvider } from "./src/context/ResidenceContext";
-import { InvoiceProvider } from "./src/context/InvoiceContext";
 import { RepairProvider } from "./src/context/RepairContext";
 import { MockAccountProvider } from "./src/context/MockAccountContext";
-import { ChatProvider } from "./src/context/ChatContext";
 import { NotificationProvider } from "./src/context/NotificationContext";
 import { tamaguiConfig } from "./tamagui.config";
 
@@ -25,19 +23,15 @@ export default function App() {
     <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
       <SafeAreaProvider>
         <ResidenceProvider>
-          <InvoiceProvider>
-            <RepairProvider>
-              <NotificationProvider>
-                <MockAccountProvider>
-                  <ChatProvider>
-                    <NavigationContainer>
-                      <RootStack />
-                    </NavigationContainer>
-                  </ChatProvider>
-                </MockAccountProvider>
-              </NotificationProvider>
-            </RepairProvider>
-          </InvoiceProvider>
+          <RepairProvider>
+            <NotificationProvider>
+              <MockAccountProvider>
+                <NavigationContainer>
+                  <RootStack />
+                </NavigationContainer>
+              </MockAccountProvider>
+            </NotificationProvider>
+          </RepairProvider>
         </ResidenceProvider>
       </SafeAreaProvider>
     </TamaguiProvider>

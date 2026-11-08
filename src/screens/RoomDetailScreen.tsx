@@ -1,58 +1,89 @@
 import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Text as TamaText, XStack, YStack } from 'tamagui';
-
+import { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { StudentRoomDto } from '../api/studentRooms';
+import { getStudentRoom } from '../api/studentRooms';
 import { AppButton } from '../components/ui/AppButton';
+import { DetailRow, ResidenceHeader, SurfaceCard } from '../components/ui/ResidenceUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
-import { StatusBadge } from '../components/ui/StatusBadge';
-import { roomDetails } from '../mocks/rooms';
+import { formatRoomPrice, roomAvailabilityLabel, roomTypeLabels } from '../components/ui/StudentRoomCard';
 import { colors, radius, typography } from '../theme';
 import type { GuestStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<GuestStackParamList, 'RoomDetail'>;
-const amenityIcons = ['wifi', 'wind', 'droplet', 'book-open'] as const;
-
-export function RoomDetailScreen({ navigation, route }: Props) {
-  return <RoomDetailView roomId={route.params.roomId} onBack={() => navigation.goBack()} onApply={() => navigation.navigate('Login')} />;
+export function RoomDetailScreen({ navigation }: Props) {
+  return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Chi tiết phòng" onBack={() => navigation.goBack()} />
+    <View style={styles.center}><Text style={styles.message}>Đăng nhập bằng tài khoản sinh viên để xem thông tin phòng.</Text>
+      <AppButton title="Đăng nhập" onPress={() => navigation.navigate('Login')} /></View>
+  </ScreenContainer>;
 }
 
-interface RoomDetailViewProps { roomId: string; onBack: () => void; onApply: () => void }
-export function RoomDetailView({ roomId, onBack, onApply }: RoomDetailViewProps) {
-  const room = roomDetails[roomId];
-  if (!room) return <ScreenContainer><Text style={styles.missing}>Không tìm thấy thông tin phòng.</Text></ScreenContainer>;
-  const available = room.capacity - room.occupied;
-  return (
-    <ScreenContainer backgroundColor={colors.surface}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <YStack style={styles.hero}>
-          {room.photoAsset ? <Image source={room.photoAsset} contentFit="cover" style={styles.photo} /> : <View style={[styles.photo, styles.photoFallback]} />}
-          <Pressable accessibilityLabel="Quay lại" style={styles.back} onPress={onBack}><Feather name="arrow-left" size={22} color={colors.text} /></Pressable>
-          {room.photoAsset ? <View style={styles.counter}><Text style={styles.counterText}>1 / 6</Text></View> : null}
-        </YStack>
-        <YStack style={styles.main}>
-          <XStack style={styles.heading}><YStack><TamaText style={styles.name}>{room.name}</TamaText><TamaText style={styles.location}>{room.building} · Tầng {room.floor}</TamaText></YStack><StatusBadge available={available} /></XStack>
-          <XStack style={styles.priceRow}><TamaText style={styles.price}>{room.monthlyPrice.toLocaleString('vi-VN')}đ</TamaText><TamaText style={styles.priceUnit}>/ tháng / người</TamaText></XStack>
-          <XStack style={styles.occupancy}><Feather name="users" size={17} color={colors.textSecondary} /><Text style={styles.occupancyText}>{room.occupied}/{room.capacity} người · {available} chỗ trống</Text></XStack>
-          {room.amenities.length > 0 ? <><View style={styles.divider} /><Text style={styles.sectionTitle}>Tiện ích</Text><View style={styles.amenities}>{room.amenities.map((item, index) => <View key={item} style={styles.amenity}><Feather name={amenityIcons[index] ?? 'check'} size={17} color={colors.primary} /><Text style={styles.bodyText}>{item}</Text></View>)}</View></> : null}
-          {room.description ? <><View style={styles.divider} /><Text style={styles.sectionTitle}>Mô tả</Text><Text style={styles.description}>{room.description}</Text></> : null}
-          {room.rules.length > 0 ? <><View style={styles.divider} /><Text style={styles.sectionTitle}>Nội quy phòng</Text>{room.rules.map((rule) => <View key={rule} style={styles.rule}><View style={styles.bullet} /><Text style={styles.bodyText}>{rule}</Text></View>)}</> : null}
-        </YStack>
-      </ScrollView>
-      <YStack style={styles.footer}><AppButton title="Đăng ký thuê phòng" disabled={available === 0} onPress={onApply} /></YStack>
-    </ScreenContainer>
-  );
+interface RoomDetailViewProps {
+  roomId: string;
+  canApplyByState: boolean;
+  onBack: () => void;
+  onApply: () => void;
+  onStatus: () => void;
+}
+
+export function RoomDetailView({ roomId, canApplyByState, onBack, onApply, onStatus }: RoomDetailViewProps) {
+  const parsedId = /^\d+$/.test(roomId) ? Number(roomId) : null;
+  const validId = parsedId != null && Number.isSafeInteger(parsedId) && parsedId > 0 ? parsedId : null;
+  const [room, setRoom] = useState<StudentRoomDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    setRoom(null);
+    setError(false);
+    setLoading(true);
+    if (validId == null) { setLoading(false); setError(true); return () => { active = false; }; }
+    void getStudentRoom(validId).then((result) => {
+      if (active) setRoom(result.roomId === validId ? result : null);
+    }).catch(() => { if (active) setError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [validId, reloadKey]));
+
+  const canCheckRegistration = room?.availableForApplication === true && canApplyByState;
+  return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Chi tiết phòng" onBack={onBack} />
+    {loading ? <View style={styles.center}><Text style={styles.message}>Đang tải thông tin phòng...</Text></View> :
+      error || !room ? <View style={styles.center}><Text style={styles.message}>Không thể tải thông tin phòng. Vui lòng thử lại.</Text>
+        <AppButton title="Thử lại" variant="outline" onPress={() => setReloadKey((value) => value + 1)} /></View> :
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.placeholder}><Feather name="home" size={42} color={colors.inactiveTab} /></View>
+          <Text style={styles.title}>Phòng {room.roomNumber}</Text>
+          <Text style={styles.building}>{room.buildingName} · {room.buildingCode}</Text>
+          {room.buildingAddress ? <Text style={styles.message}>{room.buildingAddress}</Text> : null}
+          <SurfaceCard>
+            <DetailRow label="Loại phòng" value={roomTypeLabels[room.roomType]} />
+            <DetailRow label="Tầng" value={String(room.floor)} />
+            <DetailRow label="Sức chứa" value={`${room.capacity} người`} />
+            <DetailRow label="Đang ở" value={`${room.currentOccupancy} người`} />
+            <DetailRow label="Chỗ còn nhận đơn" value={`${room.remainingSlots} chỗ`} />
+            <DetailRow label="Giá mỗi tháng" value={formatRoomPrice(room.pricePerMonth)} />
+            <DetailRow label="Tình trạng" value={roomAvailabilityLabel(room)} last />
+          </SurfaceCard>
+          {room.description ? <SurfaceCard><Text style={styles.description}>{room.description}</Text></SurfaceCard> : null}
+          {!room.availableForApplication ? <Text style={styles.message}>Phòng này hiện không nhận đăng ký.</Text> :
+            !room.eligibleForStudent ? <Text style={styles.message}>Bạn chưa thể đăng ký phòng này. Vui lòng kiểm tra hồ sơ hoặc đơn đăng ký hiện tại.</Text> : null}
+          {canCheckRegistration ? <AppButton title={room.eligibleForStudent ? 'Đăng ký phòng' : 'Xem điều kiện đăng ký'} onPress={onApply} /> :
+            !canApplyByState ? <AppButton title="Xem trạng thái đăng ký" variant="outline" onPress={onStatus} /> : null}
+        </ScrollView>}
+  </ScreenContainer>;
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: 12 }, hero: { height: 226, marginHorizontal: 7, marginTop: 4 }, photo: { width: '100%', height: '100%', borderRadius: radius.card }, photoFallback: { backgroundColor: colors.roomImageGradientStart },
-  back: { position: 'absolute', top: 14, left: 8, width: 36, height: 36, borderRadius: radius.button, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
-  counter: { position: 'absolute', right: 14, bottom: 12, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 }, counterText: { color: colors.surface, fontFamily: typography.semibold, fontSize: 11 },
-  main: { paddingHorizontal: 20, paddingTop: 18 }, heading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }, name: { color: colors.text, fontFamily: typography.bold, fontSize: 22 }, location: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13, marginTop: 4 },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 16 }, price: { color: colors.primary, fontFamily: typography.bold, fontSize: 21 }, priceUnit: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13 }, occupancy: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 10 }, occupancyText: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13 },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: 18 }, sectionTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 16, marginBottom: 12 }, amenities: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 }, amenity: { width: '50%', flexDirection: 'row', gap: 9, alignItems: 'center' }, bodyText: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13, lineHeight: 20, flexShrink: 1 }, description: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13, lineHeight: 21 }, rule: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }, bullet: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.textSecondary },
-  footer: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, borderTopColor: colors.border, borderTopWidth: 1, backgroundColor: colors.surface }, missing: { padding: 20, color: colors.text },
+  center: { flex: 1, justifyContent: 'center', padding: 24, gap: 16 },
+  content: { padding: 16, gap: 14, paddingBottom: 28 },
+  placeholder: { minHeight: 156, borderRadius: radius.card, backgroundColor: colors.fullBackground, alignItems: 'center', justifyContent: 'center' },
+  title: { color: colors.text, fontFamily: typography.bold, fontSize: 21 },
+  building: { color: colors.textSecondary, fontFamily: typography.semibold, fontSize: 14 },
+  message: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13, lineHeight: 19 },
+  description: { color: colors.text, fontFamily: typography.regular, fontSize: 13, lineHeight: 20 },
 });

@@ -1,9 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import * as ImagePicker from 'expo-image-picker';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../components/ui/AppButton';
 import { FormField } from '../components/ui/FormField';
@@ -19,7 +18,7 @@ import { validateProfileEdit } from '../utils/validation';
 type Props = NativeStackScreenProps<ProfileStackParamList, 'EditProfile'>;
 
 export function EditProfileScreen({ navigation }: Props) {
-  const { profile, updateProfile, saveStudentProfile, isAuthenticated, accountId } = useMockAccount();
+  const { profile, saveStudentProfile } = useMockAccount();
   const [form, setForm] = useState<ProfileEditForm>({
     fullName: profile?.fullName ?? '', email: profile?.email ?? '',
     phone: profile?.phone ?? '', avatarUri: profile?.avatarUri ?? null,
@@ -28,7 +27,6 @@ export function EditProfileScreen({ navigation }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const [serverError, setServerError] = useState<string>();
   const [formTouched, setFormTouched] = useState(false);
-  const isApiAccount = isAuthenticated && !accountId;
   useEffect(() => {
     if (formTouched || !profile) return;
     setForm({ fullName: profile.fullName, email: profile.email, phone: profile.phone, avatarUri: profile.avatarUri });
@@ -38,15 +36,6 @@ export function EditProfileScreen({ navigation }: Props) {
     setForm((previous) => ({ ...previous, [key]: value }));
     if (key !== 'avatarUri') setErrors((previous) => ({ ...previous, [key]: undefined }));
   };
-  const pickAvatar = async () => {
-    if (isApiAccount) return;
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.85 });
-      if (!result.canceled && result.assets[0]) setField('avatarUri', result.assets[0].uri);
-    } catch {
-      Alert.alert('Không thể chọn ảnh', 'Vui lòng thử lại trên thiết bị.');
-    }
-  };
   const save = async () => {
     const nextErrors = validateProfileEdit(form);
     setErrors(nextErrors);
@@ -54,8 +43,7 @@ export function EditProfileScreen({ navigation }: Props) {
     setIsSaving(true);
     setServerError(undefined);
     try {
-      if (isApiAccount) await saveStudentProfile({ phone: form.phone.trim() });
-      else updateProfile({ ...form, fullName: form.fullName.trim(), email: form.email.trim(), phone: form.phone.trim() });
+      await saveStudentProfile({ phone: form.phone.trim() });
       navigation.goBack();
     } catch (error) {
       setServerError(error instanceof Error ? error.message : 'Không thể cập nhật hồ sơ.');
@@ -73,15 +61,19 @@ export function EditProfileScreen({ navigation }: Props) {
       <Text style={styles.headerTitle}>Chỉnh sửa thông tin</Text>
     </View>
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-      <Pressable accessibilityRole="button" onPress={isApiAccount ? undefined : pickAvatar} style={styles.avatarArea}>
-        <ProfileAvatar profile={{ ...profile, fullName: form.fullName, avatarUri: form.avatarUri }} size={78} camera={!isApiAccount} />
-        <Text style={styles.changeAvatar}>{isApiAccount ? 'Chưa thể cập nhật ảnh đại diện' : 'Change avatar'}</Text>
-      </Pressable>
+      <View style={styles.avatarArea}>
+        <ProfileAvatar profile={profile} size={78} camera={false} />
+        <Text style={styles.changeAvatar}>Chưa thể cập nhật ảnh đại diện</Text>
+      </View>
       <View style={styles.fields}>
-        <FormField label="Họ và tên" value={form.fullName} onChangeText={(value) => setField('fullName', value)} placeholder="Họ và tên" autoComplete="name" autoCapitalize="words" error={errors.fullName} editable={!isApiAccount} />
-        <FormField label="Email" value={form.email} onChangeText={(value) => setField('email', value)} placeholder="Email" keyboardType="email-address" autoComplete="email" error={errors.email} editable={!isApiAccount} />
+        <FormField label="Họ và tên" value={form.fullName} onChangeText={() => {}} placeholder="Họ và tên" autoComplete="name" autoCapitalize="words" error={errors.fullName} editable={false} />
+        <FormField label="Email" value={form.email} onChangeText={() => {}} placeholder="Email" keyboardType="email-address" autoComplete="email" error={errors.email} editable={false} />
         <FormField label="Số điện thoại" value={form.phone} onChangeText={(value) => setField('phone', value)} placeholder="Số điện thoại" keyboardType="phone-pad" autoComplete="tel" error={errors.phone} />
         <FormField label="MSSV" value={profile.studentId ?? ''} onChangeText={() => {}} placeholder="Chưa cập nhật" editable={false} helperText="Không thể chỉnh sửa mã số sinh viên" />
+        <FormField label="Số CCCD" value={profile.cic ? `********${profile.cic.slice(-4)}` : 'Chưa cập nhật'} onChangeText={() => {}} placeholder="Chưa cập nhật" editable={false} helperText="Chọn Cập nhật CCCD để thay đổi số căn cước" />
+      </View>
+      <View style={styles.verifyButton}>
+        <AppButton title="Cập nhật CCCD" variant="outline" onPress={() => navigation.navigate('CCCDInput')} />
       </View>
       {serverError ? <Text style={styles.error}>{serverError}</Text> : null}
       <View style={styles.save}><AppButton title={isSaving ? 'Đang lưu...' : 'Lưu thay đổi'} onPress={save} disabled={isSaving} /></View>
@@ -97,6 +89,7 @@ const styles = StyleSheet.create({
   avatarArea: { alignItems: 'center', marginBottom: 20 },
   changeAvatar: { color: colors.primary, fontFamily: typography.bold, fontSize: 13, marginTop: 8 },
   fields: { gap: 18 },
+  verifyButton: { marginTop: 16 },
   save: { marginTop: 20 },
   missing: { color: colors.textSecondary, fontFamily: typography.regular, padding: 16 },
   error: { color: colors.error, fontFamily: typography.regular, fontSize: 12, marginTop: 12 },

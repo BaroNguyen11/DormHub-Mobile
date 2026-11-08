@@ -1,18 +1,15 @@
-import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as ImagePicker from 'expo-image-picker';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppButton } from '../components/ui/AppButton';
-import { RepairAttachment } from '../components/ui/RepairUi';
 import { ResidenceHeader } from '../components/ui/ResidenceUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
 import { useRepairs } from '../context/RepairContext';
 import { useResidence } from '../context/ResidenceContext';
-import { repairCategories, repairDraftExample, repairPriorities } from '../mocks/repairs';
+import { repairCategories, repairPriorities } from '../config/repairOptions';
 import { colors, radius, typography } from '../theme';
 import type { HomeStackParamList } from '../types/navigation';
 import type { RepairDraft } from '../types/repair';
@@ -22,23 +19,20 @@ export function CreateRepairRequestScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const { session } = useResidence();
   const { createRequest } = useRepairs();
-  const [draft, setDraft] = useState<RepairDraft>(repairDraftExample);
+  const [draft, setDraft] = useState<RepairDraft>({ category: null, description: '', priority: null, imageUris: [] });
   const [title, setTitle] = useState('');
   const [error, setError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
-  const isBackendRoom = session.backendRoomId != null;
+  const submittingRef = useRef(false);
   const setField = <K extends keyof RepairDraft>(key: K, value: RepairDraft[K]) => { setDraft((previous) => ({ ...previous, [key]: value })); setError(undefined); };
-  const pickImage = async () => {
-    if (draft.imageUris.length >= 2) return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 0.85 });
-    if (!result.canceled && result.assets[0]) setField('imageUris', [...draft.imageUris, result.assets[0].uri]);
-  };
   const submit = async () => {
+    if (submittingRef.current) return;
     if (session.status !== 'active' || !session.roomId) { setError('Bạn cần có phân phòng đang hoạt động để gửi yêu cầu.'); return; }
-    if (isBackendRoom && session.backendRoomId == null) { setError('Không có ID phòng từ phân phòng hiện tại.'); return; }
-    if (isBackendRoom && !title.trim()) { setError('Please enter a request title.'); return; }
+    if (session.backendRoomId == null) { setError('Chưa có thông tin phòng để gửi yêu cầu.'); return; }
+    if (!title.trim()) { setError('Vui lòng nhập tiêu đề yêu cầu.'); return; }
     const issue = validateRepairDraft(draft);
     if (issue) { setError(issue); return; }
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const created = await createRequest(draft, title);
@@ -47,16 +41,15 @@ export function CreateRepairRequestScreen() {
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Không thể gửi yêu cầu. Vui lòng thử lại.');
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
   return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Tạo yêu cầu sửa chữa" onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-    {isBackendRoom ? <View><Text style={styles.label}>Tiêu đề</Text><TextInput value={title} onChangeText={(value) => { setTitle(value); setError(undefined); }} style={styles.description} accessibilityLabel="Tiêu đề yêu cầu" /></View> : null}
-    {isBackendRoom ? <Text style={styles.roomId}>ID phòng được gửi: {session.backendRoomId}</Text> : null}
+    <View><Text style={styles.label}>Tiêu đề</Text><TextInput value={title} onChangeText={(value) => { setTitle(value); setError(undefined); }} style={styles.description} accessibilityLabel="Tiêu đề yêu cầu" /></View>
     <View><Text style={styles.label}>Danh mục sự cố</Text><View style={styles.categories}>{repairCategories.map((item) => <Pressable key={item.id} onPress={() => setField('category', item.id)} style={[styles.category, draft.category === item.id && styles.selected]}><Text style={[styles.chipText, draft.category === item.id && styles.selectedText]}>{item.symbol ? `${item.symbol} ` : ''}{item.label}</Text></Pressable>)}</View></View>
     <View><Text style={styles.label}>Mô tả chi tiết</Text><TextInput multiline textAlignVertical="top" value={draft.description} onChangeText={(value) => setField('description', value)} style={styles.description} accessibilityLabel="Mô tả chi tiết" /></View>
     <View><Text style={styles.label}>Mức độ ưu tiên</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.priorities}>{repairPriorities.map((item) => <Pressable key={item.id} onPress={() => setField('priority', item.id)} style={[styles.priority, draft.priority === item.id && styles.selected, item.id === 'URGENT' && draft.priority !== item.id && styles.urgent]}><Text style={[styles.chipText, draft.priority === item.id && styles.selectedText, item.id === 'URGENT' && draft.priority !== item.id && styles.urgentText]}>{item.label}</Text></Pressable>)}</ScrollView></View>
-    <View><Text style={styles.label}>Hình ảnh (tùy chọn)</Text>{isBackendRoom ? <Text style={styles.hint}>Backend hiện chỉ nhận URL ảnh; tải ảnh trực tiếp chưa được hỗ trợ.</Text> : <><View style={styles.images}>{draft.imageUris.length === 0 ? <RepairAttachment size={72} /> : draft.imageUris.map((uri) => <RepairAttachment key={uri} uri={uri} size={72} />)}{draft.imageUris.length < 2 ? <Pressable style={styles.addImage} onPress={pickImage} accessibilityLabel="Chọn ảnh minh họa"><Feather name="plus" size={26} color={colors.inactiveTab} /></Pressable> : null}</View>{draft.imageUris.length === 0 ? <Pressable onPress={pickImage} style={styles.firstImageTouch} accessibilityLabel="Chọn ảnh minh họa đầu tiên" /> : null}</>}</View>
     {error ? <Text style={styles.error}>{error}</Text> : null}<AppButton title={submitting ? 'Đang gửi...' : 'Gửi yêu cầu'} onPress={submit} disabled={submitting} />
   </ScrollView></ScreenContainer>;
 }

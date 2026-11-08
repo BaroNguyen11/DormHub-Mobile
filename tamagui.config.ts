@@ -6,6 +6,7 @@ import { colors, radius, spacing, typography } from './src/theme';
 const roboto = createFont({
   family: typography.regular,
   size: {
+    ...defaultConfig.fonts.body.size,
     1: typography.badge,
     2: typography.body,
     3: typography.cardTitle,
@@ -14,7 +15,7 @@ const roboto = createFont({
     6: typography.welcomeTitle,
     7: typography.splashTitle,
   },
-  lineHeight: { 1: 16, 2: 18, 3: 20, 4: 21, 5: 23, 6: 29, 7: 32 },
+  lineHeight: { ...defaultConfig.fonts.body.lineHeight, 1: 16, 2: 18, 3: 20, 4: 21, 5: 23, 6: 29, 7: 32 },
   weight: { 4: '400', 6: '600', 7: '700' },
   face: {
     400: { normal: typography.regular },

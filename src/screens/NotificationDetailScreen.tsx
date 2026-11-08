@@ -8,7 +8,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/ui/AppButton';
 import { NotificationIcon } from '../components/ui/NotificationUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
-import { useInvoices } from '../context/InvoiceContext';
 import { useNotifications } from '../context/NotificationContext';
 import { colors, radius, typography } from '../theme';
 import type { NotificationStackParamList, StudentTabsParamList } from '../types/navigation';
@@ -34,16 +33,15 @@ function bodyParts(body: string, emphasis: readonly string[]) {
 
 export function NotificationDetailScreen({ navigation, route }: Props) {
   const { notifications, markRead } = useNotifications();
-  const { invoices } = useInvoices();
   const notification = notifications.find((item) => item.id === route.params.notificationId);
 
   useEffect(() => { if (notification) markRead(notification.id); }, [markRead, notification?.id]);
 
-  const invoiceId = notification?.type === 'INVOICE' ? notification.targetId : undefined;
-  const canOpenInvoice = !!invoiceId && invoices.some((item) => item.id === invoiceId);
-  const openInvoice = () => {
-    if (!canOpenInvoice || !invoiceId) return;
-    navigation.getParent<BottomTabNavigationProp<StudentTabsParamList>>()?.navigate('Invoice', { screen: 'InvoiceDetail', params: { invoiceId } });
+  const openRelated = () => {
+    if (!notification?.targetId) return;
+    const tabs = navigation.getParent<BottomTabNavigationProp<StudentTabsParamList>>();
+    if (notification.type === 'REPAIR') tabs?.navigate('Home', { screen: 'RepairRequestDetail', params: { requestId: notification.targetId } });
+    if (notification.type === 'CONTRACT') tabs?.navigate('Room', { screen: 'Contract' });
   };
 
   return <ScreenContainer>
@@ -69,7 +67,7 @@ export function NotificationDetailScreen({ navigation, route }: Props) {
           )}
         </Text>
       </View>
-      {canOpenInvoice ? <View style={styles.action}><AppButton title="Xem hóa đơn" onPress={openInvoice} /></View> : null}
+      {notification.targetId && (notification.type === 'REPAIR' || notification.type === 'CONTRACT') ? <View style={styles.action}><AppButton title={notification.type === 'REPAIR' ? 'Xem yêu cầu sửa chữa' : 'Xem hợp đồng'} onPress={openRelated} /></View> : null}
     </ScrollView> : <Text style={styles.missing}>Không tìm thấy thông báo.</Text>}
   </ScreenContainer>;
 }

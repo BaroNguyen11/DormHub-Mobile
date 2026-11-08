@@ -1,26 +1,98 @@
-import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-
-import { FilterChip } from '../components/ui/FilterChip';
-import { InvoiceCard } from '../components/ui/InvoiceUi';
-import { ResidenceHeader } from '../components/ui/ResidenceUi';
+import { getStudentInvoices } from '../api/invoices';
+import type { StudentInvoiceSummary } from '../api/invoices';
+import { AppButton } from '../components/ui/AppButton';
+import { DetailRow, ResidenceHeader, SurfaceCard } from '../components/ui/ResidenceUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
-import { useInvoices } from '../context/InvoiceContext';
-import { mockTodayIso } from '../mocks/invoices';
 import { colors, typography } from '../theme';
 import type { InvoiceStackParamList } from '../types/navigation';
-import { daysOverdue } from '../utils/invoice';
+import { formatBillingMonth, formatLocalDate, formatMoney, invoiceStatusLabels, invoiceTypeLabels } from '../utils/billing';
 
 type Props = NativeStackScreenProps<InvoiceStackParamList, 'InvoiceList'>;
-type Filter = 'all' | 'unpaid' | 'paid' | 'overdue';
-const filters: { id: Filter; label: string }[] = [{ id: 'all', label: 'Tất cả' }, { id: 'unpaid', label: 'Chưa thanh toán' }, { id: 'paid', label: 'Đã thanh toán' }, { id: 'overdue', label: 'Quá hạn' }];
+type Filter = 'ALL' | 'UNPAID' | 'PAID';
+
 export function InvoiceListScreen({ navigation }: Props) {
-  const { invoices } = useInvoices();
-  const [filter, setFilter] = useState<Filter>('all');
-  const visible = useMemo(() => invoices.filter((invoice) => filter === 'all' || (filter === 'unpaid' && invoice.status === 'UNPAID' && daysOverdue(invoice, mockTodayIso) === 0) || (filter === 'paid' && invoice.status === 'PAID') || (filter === 'overdue' && daysOverdue(invoice, mockTodayIso) > 0)), [invoices, filter]);
-  return <ScreenContainer><StatusBar style="dark" /><View style={styles.heading}><ResidenceHeader title="Hóa đơn" showBack={false} /><Pressable style={styles.historyButton} onPress={() => navigation.navigate('PaymentHistory')} accessibilityLabel="Lịch sử thanh toán"><Feather name="clock" size={19} color={colors.primary} /></Pressable></View><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>{filters.map((item) => <FilterChip key={item.id} label={item.label} selected={filter === item.id} onPress={() => setFilter(item.id)} />)}</ScrollView><Text style={styles.section}>{filter === 'all' ? 'Xem tất cả' : filters.find((item) => item.id === filter)?.label}</Text>{visible.length ? visible.map((invoice) => <InvoiceCard key={invoice.id} invoice={invoice} onPress={() => navigation.navigate('InvoiceDetail', { invoiceId: invoice.id })} />) : <Text style={styles.empty}>Không có hóa đơn trong mục này.</Text>}</ScrollView></ScreenContainer>;
+  const [filter, setFilter] = useState<Filter>('ALL');
+  const [items, setItems] = useState<StudentInvoiceSummary[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string>();
+  const [reload, setReload] = useState(0);
+  const requestId = useRef(0);
+  const loadingMoreRef = useRef(false);
+
+  useFocusEffect(useCallback(() => {
+    const current = ++requestId.current;
+    setLoading(true);
+    setError(undefined);
+    setItems([]);
+    void getStudentInvoices(0, 20, filter === 'ALL' ? undefined : filter).then((result) => {
+      if (current !== requestId.current) return;
+      setItems(result.content);
+      setPage(result.page);
+      setTotalPages(result.totalPages);
+    }).catch((cause) => {
+      if (current === requestId.current) setError(cause instanceof Error ? cause.message : 'Không thể tải hóa đơn.');
+    }).finally(() => { if (current === requestId.current) setLoading(false); });
+    return () => { requestId.current++; };
+  }, [filter, reload]));
+
+  const loadMore = async () => {
+    if (loadingMoreRef.current || loading || page + 1 >= totalPages) return;
+    const current = requestId.current;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setError(undefined);
+    try {
+      const result = await getStudentInvoices(page + 1, 20, filter === 'ALL' ? undefined : filter);
+      if (current === requestId.current) {
+        setItems((previous) => [...previous, ...result.content]);
+        setPage(result.page);
+        setTotalPages(result.totalPages);
+      }
+    } catch (cause) {
+      if (current === requestId.current) setError(cause instanceof Error ? cause.message : 'Không thể tải thêm hóa đơn.');
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  };
+
+  return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Hóa đơn" showBack={false} />
+    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.filters}>{(['ALL', 'UNPAID', 'PAID'] as const).map((option) =>
+        <Pressable key={option} accessibilityRole="button" onPress={() => setFilter(option)} style={[styles.filter, filter === option && styles.selected]}>
+          <Text style={[styles.filterText, filter === option && styles.selectedText]}>{option === 'ALL' ? 'Tất cả' : invoiceStatusLabels[option]}</Text>
+        </Pressable>)}</View>
+      {loading ? <Text style={styles.message}>Đang tải hóa đơn...</Text> : null}
+      {!loading && error && !items.length ? <View style={styles.state}><Text style={styles.error}>{error}</Text><AppButton title="Thử lại" variant="outline" onPress={() => setReload((value) => value + 1)} /></View> : null}
+      {!loading && !error && !items.length ? <Text style={styles.message}>Chưa có hóa đơn trong mục này.</Text> : null}
+      {!loading && items.map((invoice) => <Pressable key={invoice.invoiceId} accessibilityRole="button" onPress={() => navigation.navigate('InvoiceDetail', { invoiceId: String(invoice.invoiceId) })}>
+        <SurfaceCard style={styles.card}><Text style={styles.title}>{invoiceTypeLabels[invoice.invoiceType]} · Kỳ {formatBillingMonth(invoice.billingMonth)}</Text>
+          <Text style={styles.amount}>{formatMoney(invoice.totalAmount)}</Text>
+          <DetailRow label="Trạng thái" value={invoice.overdue && invoice.status === 'UNPAID' ? 'Quá hạn thanh toán' : invoiceStatusLabels[invoice.status]} />
+          <DetailRow label="Hạn thanh toán" value={formatLocalDate(invoice.dueDate)} last /></SurfaceCard>
+      </Pressable>)}
+      {!loading && error && items.length ? <Text style={styles.error}>{error}</Text> : null}
+      {!loading && page + 1 < totalPages ? <AppButton title={loadingMore ? 'Đang tải...' : 'Xem thêm'} variant="outline" disabled={loadingMore} onPress={() => void loadMore()} /> : null}
+      <AppButton title="Hóa đơn đã thanh toán" variant="text" onPress={() => navigation.navigate('PaymentHistory')} />
+    </ScrollView>
+  </ScreenContainer>;
 }
-const styles = StyleSheet.create({ heading: { position: 'relative' }, historyButton: { position: 'absolute', right: 16, top: 8, width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }, content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, gap: 14 }, chips: { flexDirection: 'row', gap: 8, paddingRight: 16 }, section: { color: colors.primary, fontFamily: typography.bold, fontSize: 15, marginTop: 14 }, empty: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13 } });
+
+const styles = StyleSheet.create({
+  content: { padding: 16, gap: 14, paddingBottom: 28 }, filters: { flexDirection: 'row', gap: 8 },
+  filter: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  selected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterText: { color: colors.text, fontFamily: typography.semibold, fontSize: 12 }, selectedText: { color: colors.surface },
+  card: { gap: 8 }, title: { color: colors.text, fontFamily: typography.bold, fontSize: 15 },
+  amount: { color: colors.primary, fontFamily: typography.bold, fontSize: 19 },
+  state: { gap: 12 }, message: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13 },
+  error: { color: colors.error, fontFamily: typography.regular, fontSize: 13 },
+});

@@ -2,9 +2,7 @@ import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import type { PropsWithChildren } from 'react';
 import { createMaintenanceRequest, getMaintenanceRequest, getMaintenanceRequests, mapRepairCategoryToMaintenanceType } from '../api/maintenance';
 import { useResidence } from './ResidenceContext';
-import { initialRepairRequests, mockRepairDate, mockRepairTime } from '../mocks/repairs';
 import type { RepairDraft, RepairRequest } from '../types/repair';
-import { buildRepairRequest } from '../utils/repair';
 import type { ResidenceStatus } from '../types/residence';
 
 interface RepairContextValue {
@@ -15,13 +13,13 @@ interface RepairContextValue {
   createRequest: (draft: RepairDraft, title?: string) => Promise<RepairRequest | null>;
   getRequestDetail: (id: string) => Promise<RepairRequest | null>;
   loadMoreRequests: () => Promise<void>;
-  resetForAccount: (residenceStatus: ResidenceStatus, backendAccount?: boolean) => void;
+  resetForAccount: (residenceStatus: ResidenceStatus) => void;
 }
 const RepairContext = createContext<RepairContextValue | null>(null);
 
 export function RepairProvider({ children }: PropsWithChildren) {
   const { session } = useResidence();
-  const [requests, setRequests] = useState<readonly RepairRequest[]>(initialRepairRequests);
+  const [requests, setRequests] = useState<readonly RepairRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMoreRequests, setHasMoreRequests] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +29,8 @@ export function RepairProvider({ children }: PropsWithChildren) {
   const pageRef = useRef(0);
   const loadingMoreRef = useRef(false);
 
-  const resetForAccount = useCallback((residenceStatus: ResidenceStatus, backendAccount = false) => {
-    backendAccountRef.current = backendAccount;
+  const resetForAccount = useCallback((residenceStatus: ResidenceStatus) => {
+    backendAccountRef.current = residenceStatus === 'active';
     const version = ++loadVersionRef.current;
     setError(null);
     pageRef.current = 0;
@@ -40,13 +38,6 @@ export function RepairProvider({ children }: PropsWithChildren) {
     if (residenceStatus !== 'active') {
       requestsRef.current = [];
       setRequests([]);
-      setIsLoading(false);
-      return;
-    }
-    if (!backendAccount) {
-      const next = initialRepairRequests.map((item) => ({ ...item, imageUris: [...item.imageUris] }));
-      requestsRef.current = next;
-      setRequests(next);
       setIsLoading(false);
       return;
     }
@@ -89,8 +80,7 @@ export function RepairProvider({ children }: PropsWithChildren) {
 
   const createRequest = useCallback(async (draft: RepairDraft, titleInput?: string): Promise<RepairRequest | null> => {
     if (session.status !== 'active' || !session.roomId) return null;
-    if (backendAccountRef.current) {
-      if (session.backendRoomId == null || !draft.category || !draft.priority) return null;
+    if (session.backendRoomId == null || !draft.category || !draft.priority) return null;
       const description = draft.description.trim();
       const title = titleInput?.trim() || (description.length > 42 ? `${description.slice(0, 42).trimEnd()}…` : description);
       const created = await createMaintenanceRequest({
@@ -104,13 +94,6 @@ export function RepairProvider({ children }: PropsWithChildren) {
       requestsRef.current = next;
       setRequests(next);
       return created;
-    }
-    const request = buildRepairRequest(requestsRef.current, draft, session, mockRepairDate, mockRepairTime);
-    if (!request) return null;
-    const next = [request, ...requestsRef.current];
-    requestsRef.current = next;
-    setRequests(next);
-    return request;
   }, [session]);
 
   const getRequestDetail = useCallback(async (id: string): Promise<RepairRequest | null> => {

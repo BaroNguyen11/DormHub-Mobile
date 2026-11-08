@@ -18,7 +18,7 @@ function timeline(request: RepairRequest) {
   const processing = request.status === 'IN_PROGRESS';
   return [
     { label: 'Đã gửi', detail: `${request.createdDate}${request.createdTime ? ` · ${request.createdTime}` : ''}`, state: 'done' },
-    { label: 'Đã tiếp nhận', detail: request.receivedDate ? `${request.receivedDate}${request.receivedTime ? ` · ${request.receivedTime}` : ''}` : '', state: 'done' },
+    { label: 'Đã tiếp nhận', detail: request.receivedDate ? `${request.receivedDate}${request.receivedTime ? ` · ${request.receivedTime}` : ''}` : '', state: request.status === 'RECEIVED' || processing || completed ? 'done' : 'future' },
     { label: 'Đang xử lý', detail: processing ? request.progressNote ?? '' : '', state: completed ? 'done' : processing ? 'current' : 'future' },
     { label: 'Hoàn thành', detail: '', state: completed ? 'done' : 'future' },
   ] as const;

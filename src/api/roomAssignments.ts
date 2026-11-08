@@ -30,7 +30,7 @@ export async function getStudentRoomAssignments(page = 0, size = 20): Promise<re
     params: { page, size },
   });
   if (response.data.code !== 'SUCCESS' || !response.data.data) {
-    throw new Error(response.data.message || 'Could not load room assignments.');
+    throw new Error('Không thể tải thông tin phòng. Vui lòng thử lại sau.');
   }
   return response.data.data.content;
 }

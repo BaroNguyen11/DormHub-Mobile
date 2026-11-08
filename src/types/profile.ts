@@ -6,6 +6,7 @@ export interface AccountProfile {
   email: string;
   phone: string;
   avatarUri: string | null;
+  cic: string | null;
 }
 
 export interface StudentProfileDto {
@@ -22,7 +23,7 @@ export interface StudentProfileDto {
   fullName: string;
 }
 
-export type StudentProfileUpdate = Partial<Pick<StudentProfileDto, 'dateOfBirth' | 'gender' | 'address' | 'avatarUrl' | 'phone'>>;
+export type StudentProfileUpdate = Partial<Pick<StudentProfileDto, 'dateOfBirth' | 'gender' | 'address' | 'avatarUrl' | 'phone' | 'cic'>>;
 
 export type ProfileEditForm = Pick<AccountProfile, 'fullName' | 'email' | 'phone' | 'avatarUri'>;
 

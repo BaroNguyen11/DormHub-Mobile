@@ -1,58 +1,125 @@
-import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-
-import { ApplicationRoomCard } from '../components/ui/ApplicationRoomCard';
+import { useCallback, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import type { StudentRoomDto } from '../api/studentRooms';
+import { getStudentRoom } from '../api/studentRooms';
+import { getStudentProfile } from '../api/profile';
 import { AppButton } from '../components/ui/AppButton';
 import { DetailRow, ResidenceHeader, SurfaceCard } from '../components/ui/ResidenceUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
+import { formatRoomPrice, roomTypeLabels } from '../components/ui/StudentRoomCard';
 import { useResidence } from '../context/ResidenceContext';
-import { useMockAccount } from '../context/MockAccountContext';
-import { registrationStartDate } from '../mocks/residence';
-import { exploreRooms } from '../mocks/rooms';
 import { colors, radius, typography } from '../theme';
-import type { ResidenceStackParamList } from '../types/navigation';
+import type { ResidenceStackParamList, StudentTabsParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<ResidenceStackParamList, 'RegisterRoom'>;
 export function RegisterRoomScreen({ navigation, route }: Props) {
-  const { session, submitApplication, createBackendApplication } = useResidence();
-  const { isAuthenticated, accountId } = useMockAccount();
-  const isBackendAccount = isAuthenticated && accountId === null;
-  const room = exploreRooms.find((item) => item.id === route.params.roomId);
-  const [date, setDate] = useState(registrationStartDate);
+  const { session, createBackendApplication, refreshBackendApplications } = useResidence();
+  const parsedId = /^\d+$/.test(route.params.roomId) ? Number(route.params.roomId) : null;
+  const roomId = parsedId != null && Number.isSafeInteger(parsedId) && parsedId > 0 ? parsedId : null;
+  const [room, setRoom] = useState<StudentRoomDto | null>(null);
+  const [needsCic, setNeedsCic] = useState<boolean | null>(null);
   const [note, setNote] = useState('');
-  const [agreed, setAgreed] = useState(true);
-  const [error, setError] = useState<string>();
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  if (isBackendAccount) {
-    const roomId = /^\d+$/.test(route.params.roomId) ? Number(route.params.roomId) : null;
-    const submitBackend = async () => {
-      if (!roomId || !Number.isSafeInteger(roomId)) { setError('Không có ID phòng số hợp lệ từ backend.'); return; }
-      if (session.status !== 'none') { setError('Tài khoản đã có đơn đang chờ hoặc đã được duyệt.'); return; }
-      setSubmitting(true);
-      setError(undefined);
-      try {
-        await createBackendApplication(roomId, note);
-        navigation.replace('RequestStatus');
-      } catch (submitError) {
-        setError(submitError instanceof Error ? submitError.message : 'Không gửi được đơn đăng ký.');
-      } finally {
-        setSubmitting(false);
+  const [error, setError] = useState<string>();
+  const [reloadKey, setReloadKey] = useState(0);
+  const submittingRef = useRef(false);
+  const canApplyByState = session.status === 'none' || session.status === 'rejected';
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    setRoom(null);
+    setNeedsCic(null);
+    setError(undefined);
+    setLoading(true);
+    if (roomId == null) { setError('Không tìm thấy phòng đã chọn.'); setLoading(false); return () => { active = false; }; }
+    void Promise.all([getStudentRoom(roomId), getStudentProfile()]).then(([result, profile]) => {
+      if (active) {
+        setRoom(result.roomId === roomId ? result : null);
+        setNeedsCic(!/^[0-9]{12}$/.test(profile.cic ?? ''));
       }
-    };
-    return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Đăng ký thuê phòng" onBack={() => navigation.goBack()} /><View style={{ flex: 1, padding: 16, gap: 18 }}><Text style={styles.label}>ID phòng: {roomId ?? 'không hợp lệ'}</Text><View><Text style={styles.label}>Ghi chú (không bắt buộc)</Text><TextInput value={note} onChangeText={(value) => { setNote(value); setError(undefined); }} placeholder="Nhập ghi chú cho đơn đăng ký" placeholderTextColor={colors.placeholder} style={styles.note} /></View>{error ? <Text style={styles.error}>{error}</Text> : null}<AppButton title={submitting ? 'Đang gửi đơn...' : 'Gửi yêu cầu đăng ký'} disabled={submitting || !roomId} onPress={() => void submitBackend()} /></View></ScreenContainer>;
-  }
-  if (!room) return <ScreenContainer><Text>Không tìm thấy phòng.</Text></ScreenContainer>;
-  const submit = () => { if (session.status !== 'none') { setError('Trạng thái cư trú hiện tại không cho phép đăng ký thêm phòng.'); return; } const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date); const parsed = match ? new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1])) : null; if (!match || !parsed || parsed.getDate() !== Number(match[1]) || parsed.getMonth() !== Number(match[2]) - 1) { setError('Ngày bắt đầu ở chưa hợp lệ.'); return; } if (!agreed) { setError('Vui lòng xác nhận thông tin đăng ký.'); return; } submitApplication(room.id, date, note.trim()); navigation.replace('RequestStatus'); };
-  return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Đăng ký thuê phòng" onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-    <ApplicationRoomCard roomId={room.id} subtitle={`${room.monthlyPrice.toLocaleString('vi-VN')}đ / tháng · Còn ${room.capacity - room.occupied} chỗ`} />
-    <View><Text style={styles.label}>Ngày bắt đầu ở</Text><View style={styles.dateBox}><TextInput value={date} onChangeText={(value) => { setDate(value); setError(undefined); }} keyboardType="numbers-and-punctuation" style={styles.dateInput} accessibilityLabel="Ngày bắt đầu ở" /><Feather name="calendar" size={19} color={colors.inactiveTab} /></View></View>
-    <SurfaceCard><DetailRow label="Giá phòng" value={`${room.monthlyPrice.toLocaleString('vi-VN')}đ/tháng`} /><DetailRow label="Tiền cọc" value={`${room.monthlyPrice.toLocaleString('vi-VN')}đ`} last /></SurfaceCard>
-    <View><Text style={styles.label}>Ghi chú (không bắt buộc)</Text><TextInput value={note} onChangeText={setNote} placeholder="VD: nguyện vọng ở cùng bạn..." placeholderTextColor={colors.placeholder} style={styles.note} /></View>
-    <Pressable style={styles.terms} onPress={() => { setAgreed(!agreed); setError(undefined); }}><View style={[styles.checkbox, agreed && styles.checked]}>{agreed ? <Feather name="check" size={14} color={colors.surface} /> : null}</View><Text style={styles.termsText}>Tôi xác nhận thông tin đăng ký là chính xác và đồng ý với nội quy ký túc xá.</Text></Pressable>
-    {error ? <Text style={styles.error}>{error}</Text> : null}<AppButton title="Gửi yêu cầu đăng ký" onPress={submit} />
-  </ScrollView></ScreenContainer>;
+    }).catch(() => { if (active) setError('Không thể tải thông tin phòng. Vui lòng thử lại.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [roomId, reloadKey]));
+
+  const submit = async () => {
+    if (submittingRef.current || roomId == null || !room || !canApplyByState || needsCic !== false) return;
+    if (note.length > 2000) { setError('Ghi chú không được vượt quá 2.000 ký tự.'); return; }
+    submittingRef.current = true;
+    setSubmitting(true);
+    setError(undefined);
+    try {
+      const profile = await getStudentProfile();
+      if (!/^[0-9]{12}$/.test(profile.cic ?? '')) {
+        setNeedsCic(true);
+        setError('Vui lòng cập nhật số CCCD hợp lệ trước khi đăng ký phòng.');
+        return;
+      }
+      const latest = await getStudentRoom(roomId);
+      setRoom(latest);
+      if (latest.roomId !== roomId || !latest.availableForApplication || !latest.eligibleForStudent) {
+        setError('Phòng này hiện không thể đăng ký. Vui lòng chọn phòng khác.');
+        return;
+      }
+      await createBackendApplication(latest.roomId, note);
+      navigation.replace('RequestStatus');
+    } catch (submitError) {
+      try {
+        const applications = await refreshBackendApplications();
+        if (applications.some((item) => item.status === 'PENDING' || item.status === 'APPROVED')) {
+          navigation.replace('RequestStatus');
+          return;
+        }
+      } catch { /* Keep the original request error visible. */ }
+      setError(submitError instanceof Error ? submitError.message : 'Không thể gửi đơn đăng ký. Vui lòng thử lại.');
+      try { setRoom(await getStudentRoom(roomId)); } catch { /* The request error remains visible. */ }
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  };
+
+  return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Đăng ký phòng" onBack={() => navigation.goBack()} />
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      {loading ? <Text style={styles.message}>Đang kiểm tra thông tin phòng...</Text> : null}
+      {!loading && !room ? <View style={styles.state}><Text style={styles.message}>{error ?? 'Không tìm thấy phòng đã chọn.'}</Text>
+        <AppButton title="Thử lại" variant="outline" onPress={() => setReloadKey((value) => value + 1)} /></View> : null}
+      {room ? <>
+        <SurfaceCard><Text style={styles.title}>Phòng {room.roomNumber}</Text>
+          <Text style={styles.message}>{room.buildingName}</Text>
+          <DetailRow label="Loại phòng" value={roomTypeLabels[room.roomType]} />
+          <DetailRow label="Đang ở" value={`${room.currentOccupancy}/${room.capacity} người`} />
+          <DetailRow label="Chỗ còn nhận đơn" value={`${room.remainingSlots} chỗ`} />
+          <DetailRow label="Giá mỗi tháng" value={formatRoomPrice(room.pricePerMonth)} last />
+        </SurfaceCard>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {!canApplyByState ? <View style={styles.state}><Text style={styles.message}>Bạn đã có đăng ký hoặc phòng hiện tại.</Text>
+          <AppButton title="Xem trạng thái đăng ký" variant="outline" onPress={() => navigation.navigate('RequestStatus')} /></View> :
+          needsCic ? <View style={styles.state}><Text style={styles.message}>Vui lòng cập nhật số CCCD gồm 12 chữ số trước khi đăng ký phòng.</Text>
+            <AppButton title="Cập nhật CCCD" variant="outline" onPress={() => navigation.getParent<BottomTabNavigationProp<StudentTabsParamList>>()?.navigate('Profile', { screen: 'CCCDInput' })} /></View> :
+          !room.eligibleForStudent || !room.availableForApplication ? <Text style={styles.message}>Phòng này hiện không thể đăng ký với hồ sơ của bạn.</Text> : <>
+            <Text style={styles.label}>Ghi chú (không bắt buộc)</Text>
+            <TextInput value={note} onChangeText={(value) => { setNote(value); setError(undefined); }} multiline
+              maxLength={2000} placeholder="Nhập ghi chú cho đơn đăng ký" placeholderTextColor={colors.placeholder}
+              style={styles.note} accessibilityLabel="Ghi chú đăng ký phòng" />
+            <AppButton title={submitting ? 'Đang gửi đơn...' : 'Gửi đơn đăng ký'} disabled={submitting || loading}
+              onPress={() => void submit()} />
+          </>}
+      </> : null}
+    </ScrollView>
+  </ScreenContainer>;
 }
-const styles = StyleSheet.create({ content: { padding: 16, gap: 22 }, label: { color: colors.text, fontFamily: typography.bold, fontSize: 13, marginBottom: 7 }, dateBox: { height: 46, borderRadius: radius.button, backgroundColor: colors.surface, borderWidth: 0.8, borderColor: colors.border, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center' }, dateInput: { flex: 1, color: colors.text, fontFamily: typography.regular, fontSize: 13.5 }, note: { height: 60, backgroundColor: colors.surface, borderWidth: 0.8, borderColor: colors.border, borderRadius: radius.button, paddingHorizontal: 14, color: colors.text, fontFamily: typography.regular, fontSize: 13 }, terms: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 }, checkbox: { width: 18, height: 18, borderRadius: 3, borderWidth: 1, borderColor: colors.primary, alignItems: 'center', justifyContent: 'center' }, checked: { backgroundColor: colors.primary }, termsText: { flex: 1, color: colors.textSecondary, fontFamily: typography.regular, fontSize: 12.5, lineHeight: 18 }, error: { color: colors.error, fontSize: 12 } });
+
+const styles = StyleSheet.create({
+  content: { padding: 16, gap: 16, paddingBottom: 28 }, state: { gap: 12 },
+  title: { color: colors.text, fontFamily: typography.bold, fontSize: 17, marginBottom: 6 },
+  message: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13, lineHeight: 19 },
+  label: { color: colors.text, fontFamily: typography.bold, fontSize: 13 },
+  note: { minHeight: 88, textAlignVertical: 'top', backgroundColor: colors.surface, borderWidth: 0.8, borderColor: colors.border, borderRadius: radius.button, padding: 12, color: colors.text, fontFamily: typography.regular, fontSize: 13 },
+  error: { color: colors.error, fontFamily: typography.regular, fontSize: 12 },
+});

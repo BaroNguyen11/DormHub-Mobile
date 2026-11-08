@@ -1,4 +1,4 @@
-import type { LoginForm, RegisterForm } from '../types/auth';
+import type { LoginForm } from '../types/auth';
 import type { ChangePasswordForm, ProfileEditForm } from '../types/profile';
 import type { FieldErrors } from '../types/validation';
 
@@ -9,21 +9,6 @@ export function validateLogin(form: LoginForm): FieldErrors<keyof LoginForm> {
   const errors: FieldErrors<keyof LoginForm> = {};
   if (!emailPattern.test(form.identifier.trim())) errors.identifier = 'Vui lòng nhập email hợp lệ';
   if (!form.password) errors.password = 'Vui lòng nhập mật khẩu';
-  return errors;
-}
-
-export function validateRegister(form: RegisterForm): FieldErrors<keyof RegisterForm> {
-  const errors: FieldErrors<keyof RegisterForm> = {};
-  if (!form.fullName.trim()) errors.fullName = 'Vui lòng nhập họ và tên';
-  if (!emailPattern.test(form.email.trim())) errors.email = 'Email không hợp lệ';
-  if (!phonePattern.test(form.phone.replace(/[\s.-]/g, ''))) errors.phone = 'Số điện thoại không hợp lệ';
-  if (!/^\d{12}$/.test(form.identityNumber.trim())) errors.identityNumber = 'CCCD phải gồm 12 chữ số';
-  if (!form.identityFrontUri) errors.identityFrontUri = 'Vui lòng chọn ảnh mặt trước CCCD';
-  if (!form.identityBackUri) errors.identityBackUri = 'Vui lòng chọn ảnh mặt sau CCCD';
-  if (!form.username.trim()) errors.username = 'Vui lòng nhập username';
-  if (form.password.length < 8) errors.password = 'Mật khẩu cần ít nhất 8 ký tự';
-  if (form.confirmPassword !== form.password) errors.confirmPassword = 'Mật khẩu xác nhận không khớp';
-  if (!form.acceptedTerms) errors.acceptedTerms = 'Vui lòng đồng ý với điều khoản';
   return errors;
 }
 

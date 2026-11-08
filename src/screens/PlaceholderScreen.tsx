@@ -12,7 +12,7 @@ export function PlaceholderScreen({ title }: Props) {
     <ScreenContainer>
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.body}>Màn hình này sẽ được triển khai ở đợt sau.</Text>
+        <Text style={styles.body}>Chức năng này tạm thời chưa thể sử dụng. Vui lòng thử lại sau.</Text>
         {navigation.canGoBack() && (
           <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backLabel}>Quay lại</Text>

@@ -1,6 +1,5 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { RoomSearchFilters } from './room';
-import type { PaymentMethod } from './invoice';
 import type { ChatConversationId } from './chat';
 
 export type GuestStackParamList = {
@@ -9,11 +8,9 @@ export type GuestStackParamList = {
   Filter: { initialFilters: RoomSearchFilters };
   RoomDetail: { roomId: string };
   Login: { status?: 'pending' | 'invalid' } | undefined;
-  Register: undefined;
-  RegisterSuccess: undefined;
   ForgotPassword: undefined;
-  OtpConfirm: { email: string; isMock?: boolean };
-  ResetPassword: { email: string; otp: string; isMock?: boolean };
+  OtpConfirm: { email: string };
+  ResetPassword: { email: string; otp: string };
   ResetSuccess: undefined;
   PasswordChangeSuccess: undefined;
   Unavailable: { title: string };
@@ -38,7 +35,7 @@ export type HomeStackParamList = {
 export type InvoiceStackParamList = {
   InvoiceList: undefined;
   InvoiceDetail: { invoiceId: string };
-  PaymentProcessing: { invoiceId: string; method: PaymentMethod };
+  PaymentProcessing: { invoiceId: string; paymentId: string };
   PaymentSuccess: { paymentId: string };
   PaymentHistory: undefined;
 };
@@ -52,6 +49,9 @@ export type ProfileStackParamList = {
   ProfileMain: undefined;
   EditProfile: undefined;
   ChangePassword: undefined;
+  CCCDInput: undefined;
+  CCCDCamera: { side: 'front' | 'back' };
+  DocumentPicker: undefined;
 };
 
 export type ResidenceStackParamList = {

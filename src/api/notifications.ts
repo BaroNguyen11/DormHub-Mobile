@@ -37,7 +37,7 @@ function mapNotificationType(type: string): AppNotification['type'] {
   const normalized = type.toUpperCase();
   if (normalized.includes('PAYMENT')) return 'PAYMENT';
   if (normalized.includes('INVOICE')) return 'INVOICE';
-  if (normalized.includes('REPAIR')) return 'REPAIR';
+  if (normalized.includes('REPAIR') || normalized.includes('MAINTENANCE')) return 'REPAIR';
   if (normalized.includes('CONTRACT')) return 'CONTRACT';
   return 'SYSTEM';
 }

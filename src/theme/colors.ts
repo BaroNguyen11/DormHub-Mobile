@@ -27,4 +27,6 @@ export const colors = {
   repairProgressBackground: '#E9F1FB', repairProgressText: '#2674C6',
   notificationUnreadCard: '#CACEDA', notificationReadCard: '#EBEEF9',
   chatBubble: '#CBCBCB', chatComposer: '#E7E7E7',
+  success: '#1E8E5A',
+  warning: '#B7791F',
 } as const;

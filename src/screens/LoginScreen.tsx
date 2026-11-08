@@ -16,7 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Props = NativeStackScreenProps<GuestStackParamList, 'Login'>;
 export function LoginScreen({ navigation, route }: Props) {
-  const { authenticate, activateAuthenticatedAccount, activateDevAccount } = useMockAccount();
+  const { authenticate, activateAuthenticatedAccount } = useMockAccount();
   const [form, setForm] = useState<LoginForm>({ identifier: '', password: '' });
   const [errors, setErrors] = useState<Partial<Record<keyof LoginForm, string>>>({});
   const [status, setStatus] = useState(route.params?.status);
@@ -29,16 +29,9 @@ export function LoginScreen({ navigation, route }: Props) {
     if (Object.keys(nextErrors).length) return;
     setLoading(true);
     try {
-      const result = await authenticate(form);
-      if (result.kind === 'api') {
-        await activateAuthenticatedAccount(result.user);
-        navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Student' }] });
-      } else if (result.kind === 'success') {
-        activateDevAccount(result.accountId);
-        navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Student' }] });
-      } else {
-        setStatus(result.kind);
-      }
+      const user = await authenticate(form);
+      await activateAuthenticatedAccount(user);
+      navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Student' }] });
     } catch (error) {
       setServerError(error instanceof Error ? error.message : 'Đăng nhập không thành công. Vui lòng thử lại.');
     } finally {
@@ -47,7 +40,7 @@ export function LoginScreen({ navigation, route }: Props) {
   };
   return (
     <AuthLayout title="Đăng nhập" subtitle={status === 'pending' ? undefined : 'Chào mừng bạn quay lại DormHub'} onBack={() => navigation.goBack()} hideBack={status === 'pending'}>
-      {status === 'pending' ? <XStack style={styles.warning}><Feather name="clock" color={colors.warningIcon} size={18} /><Text style={styles.warningText}>Tài khoản đang chờ duyệt. Manager sẽ xác nhận tài khoản của bạn trong 1-2 ngày làm việc.</Text></XStack> : null}
+      {status === 'pending' ? <XStack style={styles.warning}><Feather name="clock" color={colors.warningIcon} size={18} /><Text style={styles.warningText}>Tài khoản chưa được kích hoạt. Vui lòng liên hệ nhà trường để được hỗ trợ.</Text></XStack> : null}
       {status === 'invalid' ? <Text style={styles.error}>Email hoặc mật khẩu chưa đúng.</Text> : null}
       {serverError ? <Text style={styles.error}>{serverError}</Text> : null}
       <YStack style={styles.fields}>
@@ -56,12 +49,12 @@ export function LoginScreen({ navigation, route }: Props) {
       </YStack>
       <Pressable onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgot}><Text style={styles.link}>Quên mật khẩu?</Text></Pressable>
       <YStack style={styles.submit}><AppButton title={loading ? 'Đang đăng nhập...' : 'Đăng nhập'} onPress={submit} disabled={loading || status === 'pending'} /></YStack>
-      <XStack style={styles.footer}><Text style={styles.footerText}>Chưa có tài khoản? </Text><Pressable onPress={() => navigation.navigate('Register')}><Text style={styles.link}>Đăng ký ngay</Text></Pressable></XStack>
+      <Text style={styles.footerText}>Tài khoản sinh viên do nhà trường cấp.</Text>
     </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  fields: { gap: 18 }, forgot: { alignSelf: 'flex-end', marginTop: 12 }, link: { color: colors.primary, fontFamily: typography.semibold, fontSize: 13 }, submit: { marginTop: 27 }, footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 23 }, footerText: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13 },
+  fields: { gap: 18 }, forgot: { alignSelf: 'flex-end', marginTop: 12 }, link: { color: colors.primary, fontFamily: typography.semibold, fontSize: 13 }, submit: { marginTop: 27 }, footerText: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13, textAlign: 'center', marginTop: 23 },
   warning: { backgroundColor: colors.limitedBackground, borderRadius: radius.button, flexDirection: 'row', gap: 10, padding: 12, marginBottom: 18 }, warningText: { flex: 1, color: colors.warningText, fontFamily: typography.regular, fontSize: 12.5, lineHeight: 18 }, error: { color: colors.error, fontFamily: typography.regular, fontSize: 12, marginBottom: 12 },
 });

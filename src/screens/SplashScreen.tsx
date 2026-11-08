@@ -5,8 +5,6 @@ import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { Text, YStack } from 'tamagui';
 
-import { mockSession } from '../mocks/session';
-import { devPreviewEnabled } from '../config/devPreview';
 import { useMockAccount } from '../context/MockAccountContext';
 import { colors, radius, typography } from '../theme';
 import type { RootStackParamList } from '../types/navigation';
@@ -18,7 +16,7 @@ export function SplashScreen({ navigation }: Props) {
   useEffect(() => {
     if (isSessionInitializing) return;
     const timer = setTimeout(() => {
-      if (isAuthenticated || (devPreviewEnabled && mockSession.kind === 'student')) navigation.replace('Student');
+      if (isAuthenticated) navigation.replace('Student');
       else navigation.replace('Guest');
     }, 1100);
     return () => clearTimeout(timer);
