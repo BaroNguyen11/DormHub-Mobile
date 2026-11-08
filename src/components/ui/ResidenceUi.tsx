@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, Text as TamaText, XStack, YStack } from 'tamagui';
 import { studentProfile, utilityOverview } from '../../mocks/residence';
 import { useMockAccount } from '../../context/MockAccountContext';
+import { useAuth } from '../../context/AuthContext';
 import { colors, radius, typography } from '../../theme';
 import { ProfileAvatar } from './ProfileUi';
 
@@ -11,7 +12,9 @@ type Icon = ComponentProps<typeof Feather>['name'];
 
 export function StudentHeader({ onMessage }: { onMessage?: () => void }) {
   const { profile } = useMockAccount();
-  const displayName = profile?.fullName.trim().split(/\s+/).filter(Boolean).slice(-1)[0] || profile?.accountId || '';
+  const auth = useAuth();
+  const realName = auth.status === 'authenticated' ? auth.user.fullName : null;
+  const displayName = realName?.trim().split(/\s+/).filter(Boolean).slice(-1)[0] || profile?.fullName.trim().split(/\s+/).filter(Boolean).slice(-1)[0] || profile?.accountId || '';
   return <XStack style={styles.studentHeader}>
     {profile ? <ProfileAvatar profile={profile} size={44} /> : <View style={styles.avatar} />}
     <YStack style={styles.studentCopy}>

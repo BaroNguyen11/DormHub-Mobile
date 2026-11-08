@@ -10,6 +10,7 @@ import { IconTile, SectionHeader, StudentHeader, SurfaceCard, UtilityMiniCard } 
 import { ScreenContainer } from '../components/ui/ScreenContainer';
 import { useResidence } from '../context/ResidenceContext';
 import { useInvoices } from '../context/InvoiceContext';
+import { useAuth } from '../context/AuthContext';
 import { featuredInvoiceId } from '../mocks/invoices';
 import { homeOverview, residentRoom } from '../mocks/residence';
 import { colors, radius, typography } from '../theme';
@@ -19,13 +20,14 @@ import { formatIsoDate, formatVnd } from '../utils/invoice';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeDashboard'>;
 export function HomeScreen({ navigation }: Props) {
+  const auth = useAuth();
   const tabs = navigation.getParent<BottomTabNavigationProp<StudentTabsParamList>>();
   const { session } = useResidence();
   const { invoices } = useInvoices();
   const featuredInvoice = invoices.find((item) => item.id === featuredInvoiceId);
   if (session.status !== 'active') return <ResidenceLandingScreen />;
   return <ScreenContainer><StatusBar style="dark" /><ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-    <StudentHeader onMessage={() => tabs?.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Chat')} />
+    <StudentHeader onMessage={auth.status === 'authenticated' ? undefined : () => tabs?.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Chat')} />
     <Pressable style={styles.roomCard} onPress={() => tabs?.navigate('Room', { screen: 'MyRoom' })}><XStack style={styles.roomTop}><Text style={styles.roomLabel}>Phòng hiện tại</Text><Text style={styles.activeBadge}>Hiệu lực</Text></XStack><Text style={styles.roomName}>{residentRoom.name}</Text><Text style={styles.roomMeta}>{residentRoom.building} · Tầng {residentRoom.floor} · {residentRoom.occupied}/{residentRoom.capacity} người</Text></Pressable>
     {featuredInvoice ? <SurfaceCard style={styles.invoiceCard}><View style={styles.invoiceTop}><Text style={styles.invoiceMonth}>{featuredInvoice.title}</Text><Text style={[styles.unpaid, featuredInvoice.status === 'PAID' && styles.paid]}>{featuredInvoice.status === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}</Text></View><Text style={styles.invoicePrice}>{formatVnd(featuredInvoice.totalAmount)}</Text><View style={styles.due}><Feather name="calendar" size={16} color={colors.textSecondary} /><Text style={styles.dueText}>Hạn thanh toán: {formatIsoDate(featuredInvoice.dueDate)}</Text></View><AppButton title={featuredInvoice.status === 'PAID' ? 'Xem hóa đơn' : 'Thanh toán'} onPress={() => tabs?.navigate('Invoice', { screen: 'InvoiceDetail', params: { invoiceId: featuredInvoice.id } })} /></SurfaceCard> : null}
     <SectionHeader title="Hành động nhanh" /><XStack style={styles.quick}><IconTile icon="tool" label="Báo sửa chữa" onPress={() => navigation.navigate('RepairRequestList')} /><IconTile icon="file-text" label="Hóa đơn" onPress={() => tabs?.navigate('Invoice', { screen: 'InvoiceList' })} /><IconTile icon="zap" label="Điện nước" onPress={() => tabs?.navigate('Room', { screen: 'Utilities' })} /><IconTile icon="file" label="Hợp đồng" onPress={() => tabs?.navigate('Room', { screen: 'Contract' })} /></XStack>

@@ -14,11 +14,12 @@ import { useResidence } from './ResidenceContext';
 
 interface MockAccountContextValue {
   accountId: DevPreviewAccountId | null;
+  postLogoutDestination: 'Welcome' | 'PasswordChangeSuccess';
   profile: AccountProfile | null;
   authenticate: (form: LoginForm) => MockLoginResult;
   updateProfile: (form: ProfileEditForm, expectedAccountId: DevPreviewAccountId) => boolean;
   changePassword: (currentPassword: string, newPassword: string) => 'success' | 'incorrect' | 'invalid' | 'unavailable';
-  logout: () => void;
+  logout: (destination?: 'Welcome' | 'PasswordChangeSuccess') => void;
   activateAuthenticatedAccount: (result: Extract<MockLoginResult, { kind: 'success' }>) => void;
   activateDevAccount: (accountId: DevPreviewAccountId) => boolean;
 }
@@ -30,6 +31,7 @@ export function MockAccountProvider({ children }: PropsWithChildren) {
   const { resetForAccount: resetRepairs } = useRepairs();
   const { resetForAccount: resetNotifications } = useNotifications();
   const [accountId, setAccountId] = useState<DevPreviewAccountId | null>(null);
+  const [postLogoutDestination, setPostLogoutDestination] = useState<'Welcome' | 'PasswordChangeSuccess'>('Welcome');
   const accountIdRef = useRef<DevPreviewAccountId | null>(null);
   const [profiles, setProfiles] = useState<Record<DevPreviewAccountId, AccountProfile>>(() => ({
     student: { ...initialProfiles.student },
@@ -39,6 +41,7 @@ export function MockAccountProvider({ children }: PropsWithChildren) {
   // Demo credentials live only in React memory. They are not persisted or logged.
   const [passwordOverrides, setPasswordOverrides] = useState<Partial<Record<DevPreviewAccountId, string>>>({});
   const activate = useCallback((id: DevPreviewAccountId, status: ResidenceStatus) => {
+    setPostLogoutDestination('Welcome');
     resetInvoices(status);
     resetRepairs(status);
     resetNotifications(id);
@@ -63,7 +66,8 @@ export function MockAccountProvider({ children }: PropsWithChildren) {
     setPasswordOverrides((previous) => ({ ...previous, [accountId]: newPassword }));
     return 'success';
   }, [accountId, passwordOverrides]);
-  const logout = useCallback(() => {
+  const logout = useCallback((destination: 'Welcome' | 'PasswordChangeSuccess' = 'Welcome') => {
+    setPostLogoutDestination(destination);
     resetInvoices('none');
     resetRepairs('none');
     resetNotifications(null);
@@ -79,7 +83,7 @@ export function MockAccountProvider({ children }: PropsWithChildren) {
     return true;
   }, [activate]);
   const profile = accountId ? profiles[accountId] : null;
-  return <MockAccountContext.Provider value={{ accountId, profile, authenticate, updateProfile, changePassword, logout, activateAuthenticatedAccount, activateDevAccount }}>{children}</MockAccountContext.Provider>;
+  return <MockAccountContext.Provider value={{ accountId, postLogoutDestination, profile, authenticate, updateProfile, changePassword, logout, activateAuthenticatedAccount, activateDevAccount }}>{children}</MockAccountContext.Provider>;
 }
 
 export function useMockAccount() { const value = useContext(MockAccountContext); if (!value) throw new Error('MockAccountProvider is missing'); return value; }

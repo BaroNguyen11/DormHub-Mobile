@@ -11,6 +11,8 @@ import { MockAccountProvider } from "./src/context/MockAccountContext";
 import { ChatProvider } from "./src/context/ChatContext";
 import { NotificationProvider } from "./src/context/NotificationContext";
 import { tamaguiConfig } from "./tamagui.config";
+import { AuthPocPanel } from "./src/components/dev/AuthPocPanel";
+import { AuthProvider } from "./src/context/AuthContext";
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
@@ -30,9 +32,12 @@ export default function App() {
               <NotificationProvider>
                 <MockAccountProvider>
                   <ChatProvider>
-                    <NavigationContainer>
-                      <RootStack />
-                    </NavigationContainer>
+                    <AuthProvider>
+                      <NavigationContainer>
+                        <RootStack />
+                      </NavigationContainer>
+                      {__DEV__ ? <AuthPocPanel /> : null}
+                    </AuthProvider>
                   </ChatProvider>
                 </MockAccountProvider>
               </NotificationProvider>
