@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RepairAttachment, RepairStatusBadge, repairCategoryLabel, repairPriorityLabel } from '../components/ui/RepairUi';
@@ -23,7 +24,8 @@ function timeline(request: RepairRequest) {
   ] as const;
 }
 export function RepairRequestDetailScreen({ navigation, route }: Props) {
-  const { requests } = useRepairs();
+  const { requests, getRequestDetail } = useRepairs();
+  useEffect(() => { void getRequestDetail(route.params.requestId).catch(() => undefined); }, [getRequestDetail, route.params.requestId]);
   const request = requests.find((item) => item.id === route.params.requestId);
   if (!request) return <ScreenContainer><Text style={styles.missing}>Không tìm thấy yêu cầu.</Text></ScreenContainer>;
   return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title={request.id} onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

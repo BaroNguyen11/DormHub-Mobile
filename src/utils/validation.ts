@@ -7,7 +7,7 @@ const phonePattern = /^(0|\+84)\d{9}$/;
 
 export function validateLogin(form: LoginForm): FieldErrors<keyof LoginForm> {
   const errors: FieldErrors<keyof LoginForm> = {};
-  if (!form.identifier.trim()) errors.identifier = 'Vui lòng nhập username hoặc email';
+  if (!emailPattern.test(form.identifier.trim())) errors.identifier = 'Vui lòng nhập email hợp lệ';
   if (!form.password) errors.password = 'Vui lòng nhập mật khẩu';
   return errors;
 }
@@ -53,7 +53,7 @@ export function validateProfileEdit(form: ProfileEditForm): FieldErrors<'fullNam
 export function validateChangePassword(form: ChangePasswordForm): FieldErrors<keyof ChangePasswordForm> {
   const errors: FieldErrors<keyof ChangePasswordForm> = {};
   if (!form.currentPassword) errors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại';
-  if (form.newPassword.length < 8) errors.newPassword = 'Mật khẩu mới cần ít nhất 8 ký tự';
+  if (form.newPassword.length < 6 || form.newPassword.length > 50) errors.newPassword = 'Mật khẩu mới phải dài từ 6 đến 50 ký tự';
   if (form.newPassword === form.currentPassword && form.newPassword) errors.newPassword = 'Mật khẩu mới phải khác mật khẩu hiện tại';
   if (form.confirmPassword !== form.newPassword) errors.confirmPassword = 'Mật khẩu xác nhận không khớp';
   return errors;

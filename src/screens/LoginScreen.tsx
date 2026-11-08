@@ -16,29 +16,46 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Props = NativeStackScreenProps<GuestStackParamList, 'Login'>;
 export function LoginScreen({ navigation, route }: Props) {
-  const { authenticate, activateAuthenticatedAccount } = useMockAccount();
+  const { authenticate, activateAuthenticatedAccount, activateDevAccount } = useMockAccount();
   const [form, setForm] = useState<LoginForm>({ identifier: '', password: '' });
   const [errors, setErrors] = useState<Partial<Record<keyof LoginForm, string>>>({});
   const [status, setStatus] = useState(route.params?.status);
-  const setField = (key: keyof LoginForm, value: string) => { setForm((previous) => ({ ...previous, [key]: value })); setErrors((previous) => ({ ...previous, [key]: undefined })); setStatus(undefined); };
-  const submit = () => {
+  const [serverError, setServerError] = useState<string>();
+  const [loading, setLoading] = useState(false);
+  const setField = (key: keyof LoginForm, value: string) => { setForm((previous) => ({ ...previous, [key]: value })); setErrors((previous) => ({ ...previous, [key]: undefined })); setStatus(undefined); setServerError(undefined); };
+  const submit = async () => {
     const nextErrors = validateLogin(form);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
-    const result = authenticate(form);
-    if (result.kind === 'success') { activateAuthenticatedAccount(result); navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Student' }] }); }
-    else setStatus(result.kind);
+    setLoading(true);
+    try {
+      const result = await authenticate(form);
+      if (result.kind === 'api') {
+        await activateAuthenticatedAccount(result.user);
+        navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Student' }] });
+      } else if (result.kind === 'success') {
+        activateDevAccount(result.accountId);
+        navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Student' }] });
+      } else {
+        setStatus(result.kind);
+      }
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : 'Đăng nhập không thành công. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <AuthLayout title="Đăng nhập" subtitle={status === 'pending' ? undefined : 'Chào mừng bạn quay lại DormHub'} onBack={() => navigation.goBack()} hideBack={status === 'pending'}>
       {status === 'pending' ? <XStack style={styles.warning}><Feather name="clock" color={colors.warningIcon} size={18} /><Text style={styles.warningText}>Tài khoản đang chờ duyệt. Manager sẽ xác nhận tài khoản của bạn trong 1-2 ngày làm việc.</Text></XStack> : null}
-      {status === 'invalid' ? <Text style={styles.error}>Username hoặc mật khẩu chưa đúng.</Text> : null}
+      {status === 'invalid' ? <Text style={styles.error}>Email hoặc mật khẩu chưa đúng.</Text> : null}
+      {serverError ? <Text style={styles.error}>{serverError}</Text> : null}
       <YStack style={styles.fields}>
-        <FormField label="username" value={form.identifier} onChangeText={(value) => setField('identifier', value)} placeholder="vd: 23647241" autoComplete="username" error={errors.identifier} />
+        <FormField label="Email" value={form.identifier} onChangeText={(value) => setField('identifier', value)} placeholder="sinhvien@example.com" keyboardType="email-address" autoComplete="email" error={errors.identifier} />
         <FormField label="Mật khẩu" value={form.password} onChangeText={(value) => setField('password', value)} placeholder="Nhập mật khẩu" secure autoComplete="current-password" error={errors.password} />
       </YStack>
       <Pressable onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgot}><Text style={styles.link}>Quên mật khẩu?</Text></Pressable>
-      <YStack style={styles.submit}><AppButton title="Đăng nhập" onPress={submit} disabled={status === 'pending'} /></YStack>
+      <YStack style={styles.submit}><AppButton title={loading ? 'Đang đăng nhập...' : 'Đăng nhập'} onPress={submit} disabled={loading || status === 'pending'} /></YStack>
       <XStack style={styles.footer}><Text style={styles.footerText}>Chưa có tài khoản? </Text><Pressable onPress={() => navigation.navigate('Register')}><Text style={styles.link}>Đăng ký ngay</Text></Pressable></XStack>
     </AuthLayout>
   );

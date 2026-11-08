@@ -10,13 +10,13 @@ import { useMockAccount } from '../context/MockAccountContext';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootStack() {
-  const { accountId } = useMockAccount();
+  const { isAuthenticated } = useMockAccount();
   return (
     <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Guest" component={GuestStack} />
       <Stack.Screen name="Student" component={StudentTabs} />
-      {accountId ? <Stack.Screen name="Chat" component={ChatStack} /> : null}
+      {isAuthenticated ? <Stack.Screen name="Chat" component={ChatStack} /> : null}
     </Stack.Navigator>
   );
 }

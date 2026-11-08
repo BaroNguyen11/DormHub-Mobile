@@ -9,6 +9,7 @@ import { AppButton } from '../components/ui/AppButton';
 import { DetailRow, ResidenceHeader, SurfaceCard } from '../components/ui/ResidenceUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
 import { useResidence } from '../context/ResidenceContext';
+import { useMockAccount } from '../context/MockAccountContext';
 import { registrationStartDate } from '../mocks/residence';
 import { exploreRooms } from '../mocks/rooms';
 import { colors, radius, typography } from '../theme';
@@ -16,12 +17,33 @@ import type { ResidenceStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<ResidenceStackParamList, 'RegisterRoom'>;
 export function RegisterRoomScreen({ navigation, route }: Props) {
-  const { session, submitApplication } = useResidence();
+  const { session, submitApplication, createBackendApplication } = useResidence();
+  const { isAuthenticated, accountId } = useMockAccount();
+  const isBackendAccount = isAuthenticated && accountId === null;
   const room = exploreRooms.find((item) => item.id === route.params.roomId);
   const [date, setDate] = useState(registrationStartDate);
   const [note, setNote] = useState('');
   const [agreed, setAgreed] = useState(true);
   const [error, setError] = useState<string>();
+  const [submitting, setSubmitting] = useState(false);
+  if (isBackendAccount) {
+    const roomId = /^\d+$/.test(route.params.roomId) ? Number(route.params.roomId) : null;
+    const submitBackend = async () => {
+      if (!roomId || !Number.isSafeInteger(roomId)) { setError('Không có ID phòng số hợp lệ từ backend.'); return; }
+      if (session.status !== 'none') { setError('Tài khoản đã có đơn đang chờ hoặc đã được duyệt.'); return; }
+      setSubmitting(true);
+      setError(undefined);
+      try {
+        await createBackendApplication(roomId, note);
+        navigation.replace('RequestStatus');
+      } catch (submitError) {
+        setError(submitError instanceof Error ? submitError.message : 'Không gửi được đơn đăng ký.');
+      } finally {
+        setSubmitting(false);
+      }
+    };
+    return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Đăng ký thuê phòng" onBack={() => navigation.goBack()} /><View style={{ flex: 1, padding: 16, gap: 18 }}><Text style={styles.label}>ID phòng: {roomId ?? 'không hợp lệ'}</Text><View><Text style={styles.label}>Ghi chú (không bắt buộc)</Text><TextInput value={note} onChangeText={(value) => { setNote(value); setError(undefined); }} placeholder="Nhập ghi chú cho đơn đăng ký" placeholderTextColor={colors.placeholder} style={styles.note} /></View>{error ? <Text style={styles.error}>{error}</Text> : null}<AppButton title={submitting ? 'Đang gửi đơn...' : 'Gửi yêu cầu đăng ký'} disabled={submitting || !roomId} onPress={() => void submitBackend()} /></View></ScreenContainer>;
+  }
   if (!room) return <ScreenContainer><Text>Không tìm thấy phòng.</Text></ScreenContainer>;
   const submit = () => { if (session.status !== 'none') { setError('Trạng thái cư trú hiện tại không cho phép đăng ký thêm phòng.'); return; } const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date); const parsed = match ? new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1])) : null; if (!match || !parsed || parsed.getDate() !== Number(match[1]) || parsed.getMonth() !== Number(match[2]) - 1) { setError('Ngày bắt đầu ở chưa hợp lệ.'); return; } if (!agreed) { setError('Vui lòng xác nhận thông tin đăng ký.'); return; } submitApplication(room.id, date, note.trim()); navigation.replace('RequestStatus'); };
   return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Đăng ký thuê phòng" onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">

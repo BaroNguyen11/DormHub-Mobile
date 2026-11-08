@@ -1,11 +1,10 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { SectionList, StyleSheet, Text, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 
 import { NotificationRow } from '../components/ui/NotificationUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
 import { useNotifications } from '../context/NotificationContext';
-import { mockNotificationNowIso } from '../mocks/notifications';
 import { colors, typography } from '../theme';
 import type { NotificationStackParamList } from '../types/navigation';
 import { notificationSections } from '../utils/notification';
@@ -13,8 +12,9 @@ import { notificationSections } from '../utils/notification';
 type Props = NativeStackScreenProps<NotificationStackParamList, 'NotificationCenter'>;
 
 export function NotificationCenterScreen({ navigation }: Props) {
-  const { notifications, markAllRead } = useNotifications();
-  const sections = notificationSections(notifications, mockNotificationNowIso);
+  const { notifications, unreadCount, isLoading, hasMore, error, markAllRead, loadMore } = useNotifications();
+  const nowIso = new Date().toISOString();
+  const sections = notificationSections(notifications, nowIso);
 
   return <ScreenContainer>
     <StatusBar style="dark" />
@@ -25,11 +25,14 @@ export function NotificationCenterScreen({ navigation }: Props) {
       stickySectionHeadersEnabled={false}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.content}
-      ListHeaderComponent={notifications.length ? <Pressable accessibilityRole="button" onPress={markAllRead} style={styles.markAll}><Text style={styles.markAllText}>Đánh dấu đã đọc tất cả</Text></Pressable> : undefined}
+      ListHeaderComponent={notifications.length ? <View>{error ? <Text style={styles.error}>{error}</Text> : null}{notifications.some((item) => !item.isRead) ? <Pressable accessibilityRole="button" disabled={isLoading || unreadCount === 0} onPress={markAllRead} style={styles.markAll}><Text style={styles.markAllText}>Đánh dấu đã đọc tất cả</Text></Pressable> : null}</View> : error ? <Text style={styles.error}>{error}</Text> : undefined}
       renderSectionHeader={({ section }) => <Text style={[styles.sectionTitle, section.title !== sections[0]?.title && styles.laterSection]}>{section.title}</Text>}
-      renderItem={({ item }) => <NotificationRow item={item} nowIso={mockNotificationNowIso} onPress={() => navigation.navigate('NotificationDetail', { notificationId: item.id })} />}
+      renderItem={({ item }) => <NotificationRow item={item} nowIso={nowIso} onPress={() => navigation.navigate('NotificationDetail', { notificationId: item.id })} />}
       ItemSeparatorComponent={() => <View style={styles.itemGap} />}
-      ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyTitle}>Chưa có thông báo</Text><Text style={styles.emptyBody}>Thông báo mới sẽ xuất hiện tại đây.</Text></View>}
+      onEndReached={() => { if (hasMore && !isLoading) loadMore(); }}
+      onEndReachedThreshold={0.35}
+      ListFooterComponent={isLoading && notifications.length > 0 ? <ActivityIndicator color={colors.primary} style={styles.loading} /> : undefined}
+      ListEmptyComponent={isLoading ? <ActivityIndicator color={colors.primary} style={styles.loading} /> : error ? <View style={styles.empty}><Text style={styles.error}>{error}</Text></View> : <View style={styles.empty}><Text style={styles.emptyTitle}>Chưa có thông báo</Text><Text style={styles.emptyBody}>Thông báo mới sẽ xuất hiện tại đây.</Text></View>}
     />
   </ScreenContainer>;
 }
@@ -43,6 +46,8 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 14, marginBottom: 7 },
   itemGap: { height: 6 },
   laterSection: { marginTop: 12 },
+  loading: { marginVertical: 24 },
+  error: { color: colors.error, fontFamily: typography.regular, fontSize: 12, marginBottom: 10 },
   empty: { alignItems: 'center', paddingTop: 72, paddingHorizontal: 16 },
   emptyTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 16 },
   emptyBody: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: typography.body, marginTop: 8, textAlign: 'center' },

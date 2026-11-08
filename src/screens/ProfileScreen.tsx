@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ProfileAvatar, ProfileMenuRow } from '../components/ui/ProfileUi';
@@ -16,14 +17,18 @@ import type { ProfileStackParamList, RootStackParamList, StudentTabsParamList } 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>;
 
 export function ProfileScreen({ navigation }: Props) {
-  const { profile, logout } = useMockAccount();
+  const { profile, logout, refreshProfile, isAuthenticated, accountId } = useMockAccount();
   const { session } = useResidence();
   const tabs = navigation.getParent<BottomTabNavigationProp<StudentTabsParamList>>();
   const hasRoom = session.status === 'active' && !!session.roomId;
+  useEffect(() => {
+    if (isAuthenticated && !accountId) void refreshProfile().catch(() => undefined);
+  }, [accountId, isAuthenticated, refreshProfile]);
   const unavailable = () => Alert.alert('Chưa hỗ trợ', 'Mục này chưa có trong bản xem thử.');
-  const signOut = () => {
-    logout();
+  const signOut = async () => {
+    const serverLogoutSucceeded = await logout();
     tabs?.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({ index: 0, routes: [{ name: 'Guest', params: { screen: 'Welcome' } }] });
+    if (!serverLogoutSucceeded) Alert.alert('Chưa xác nhận đăng xuất', 'Ứng dụng đã thoát tài khoản, nhưng backend chưa xác nhận thu hồi phiên. Hãy kiểm tra kết nối.');
   };
 
   if (!profile) return <ScreenContainer><Text style={styles.missing}>Không có thông tin tài khoản.</Text></ScreenContainer>;
@@ -60,7 +65,7 @@ export function ProfileScreen({ navigation }: Props) {
 
       <Text style={styles.sectionTitle}>Ký túc xá</Text>
       <SurfaceCard style={styles.card}>
-        <ProfileMenuRow icon="inbox" title="Phòng hiện tại" subtitle={hasRoom ? `${session.roomId} · ${residentRoom.building}` : 'Chưa có phòng hiện tại'} onPress={() => tabs?.navigate('Room', { screen: hasRoom ? 'MyRoom' : 'Residence' })} />
+        <ProfileMenuRow icon="inbox" title="Phòng hiện tại" subtitle={hasRoom ? (session.backendRoomId != null ? `ID phòng ${session.backendRoomId}` : `${session.roomId} · ${residentRoom.building}`) : `Chưa có phòng hiện tại`} onPress={() => tabs?.navigate('Room', { screen: hasRoom ? 'MyRoom' : 'Residence' })} />
         <ProfileMenuRow icon="file-text" title="Hợp đồng" subtitle={hasRoom ? undefined : 'Chưa có hợp đồng'} onPress={hasRoom ? () => tabs?.navigate('Room', { screen: 'Contract' }) : undefined} last />
       </SurfaceCard>
 

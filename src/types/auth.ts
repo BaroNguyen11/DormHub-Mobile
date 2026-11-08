@@ -4,6 +4,15 @@ export interface LoginForm {
   password: string;
 }
 
+export interface AuthenticatedUser {
+  userId: number;
+  username: string;
+  email: string;
+  fullName: string;
+  role: string;
+  status: string;
+}
+
 export type DevPreviewAccountId = 'student' | 'newstudent' | 'rejectedstudent';
 
 export interface RegisterForm {
@@ -23,3 +32,5 @@ export type MockLoginResult =
   | { kind: 'success'; accountId: DevPreviewAccountId; residenceStatus: 'active' | 'none' | 'rejected' }
   | { kind: 'pending' }
   | { kind: 'invalid' };
+
+export type AuthenticationResult = { kind: 'api'; user: AuthenticatedUser } | MockLoginResult;

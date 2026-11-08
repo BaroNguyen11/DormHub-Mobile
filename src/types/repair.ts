@@ -1,7 +1,7 @@
 // Frontend mock view models; these are not backend DTOs.
-export type RepairCategory = 'ELECTRIC' | 'WATER' | 'AIR_CONDITIONER' | 'FURNITURE' | 'ROOM' | 'OTHER';
+export type RepairCategory = 'ELECTRIC' | 'WATER' | 'AIR_CONDITIONER' | 'FURNITURE' | 'ROOM' | 'OTHER' | 'FAN' | 'REFRIGERATOR' | 'DOOR_WINDOW';
 export type RepairPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-export type RepairStatus = 'RECEIVED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type RepairStatus = 'RECEIVED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
 
 export interface RepairRequest {
   id: string;
@@ -20,6 +20,8 @@ export interface RepairRequest {
   showAttachmentPlaceholder?: boolean;
   collection: 'current' | 'history';
   createdInSession?: boolean;
+  rejectionReason?: string;
+  resolvedDate?: string;
 }
 
 export interface RepairDraft {

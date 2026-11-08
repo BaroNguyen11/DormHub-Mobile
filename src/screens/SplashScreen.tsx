@@ -7,19 +7,22 @@ import { Text, YStack } from 'tamagui';
 
 import { mockSession } from '../mocks/session';
 import { devPreviewEnabled } from '../config/devPreview';
+import { useMockAccount } from '../context/MockAccountContext';
 import { colors, radius, typography } from '../theme';
 import type { RootStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
 export function SplashScreen({ navigation }: Props) {
+  const { isAuthenticated, isSessionInitializing } = useMockAccount();
   useEffect(() => {
+    if (isSessionInitializing) return;
     const timer = setTimeout(() => {
-      if (devPreviewEnabled && mockSession.kind === 'student') navigation.replace('Student');
+      if (isAuthenticated || (devPreviewEnabled && mockSession.kind === 'student')) navigation.replace('Student');
       else navigation.replace('Guest');
     }, 1100);
     return () => clearTimeout(timer);
-  }, [navigation]);
+  }, [isAuthenticated, isSessionInitializing, navigation]);
 
   return (
     <YStack style={styles.screen}>

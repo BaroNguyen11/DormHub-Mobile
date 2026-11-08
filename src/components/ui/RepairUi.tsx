@@ -2,23 +2,23 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { repairCategories, repairPriorities, repairStatusLabels } from '../../mocks/repairs';
+import { additionalRepairCategories, repairCategories, repairPriorities, repairStatusLabels } from '../../mocks/repairs';
 import { colors, radius, typography } from '../../theme';
 import type { RepairCategory, RepairRequest } from '../../types/repair';
 
-const icons = { ELECTRIC: 'zap', WATER: 'droplet', AIR_CONDITIONER: 'wind', FURNITURE: 'inbox', ROOM: 'home', OTHER: 'tool' } as const;
+const icons: Record<RepairCategory, keyof typeof Feather.glyphMap> = { ELECTRIC: 'zap', WATER: 'droplet', AIR_CONDITIONER: 'wind', FURNITURE: 'inbox', ROOM: 'home', OTHER: 'tool', FAN: 'wind', REFRIGERATOR: 'thermometer', DOOR_WINDOW: 'square' };
 
 export function RepairCategoryIcon({ category, status }: { category: RepairCategory; status?: RepairRequest['status'] }) {
-  const cancelled = status === 'CANCELLED';
+  const cancelled = status === 'CANCELLED' || status === 'REJECTED';
   const background = cancelled ? colors.rejectionBackground : category === 'ELECTRIC' ? colors.limitedBackground : category === 'WATER' ? colors.waterIconBackground : category === 'AIR_CONDITIONER' ? colors.fullBackground : colors.availableBackground;
   const color = cancelled ? colors.error : category === 'ELECTRIC' ? colors.limitedText : category === 'WATER' ? colors.repairProgressText : category === 'AIR_CONDITIONER' ? colors.textSecondary : colors.availableText;
   return <View style={[styles.categoryIcon, { backgroundColor: background }]}><Feather name={icons[category]} size={20} color={color} /></View>;
 }
 
 export function RepairStatusBadge({ status }: { status: RepairRequest['status'] }) {
-  const background = status === 'IN_PROGRESS' ? colors.repairProgressBackground : status === 'RECEIVED' ? colors.limitedBackground : status === 'COMPLETED' ? colors.availableBackground : colors.fullBackground;
-  const color = status === 'IN_PROGRESS' ? colors.repairProgressText : status === 'RECEIVED' ? colors.limitedText : status === 'COMPLETED' ? colors.availableText : colors.textSecondary;
-  return <View style={[styles.badge, { backgroundColor: background }]}><Text style={[styles.badgeText, { color }]}>{repairStatusLabels[status]}</Text></View>;
+  const background = status === 'IN_PROGRESS' ? colors.repairProgressBackground : status === 'RECEIVED' ? colors.limitedBackground : status === 'COMPLETED' ? colors.availableBackground : colors.rejectionBackground;
+  const color = status === 'IN_PROGRESS' ? colors.repairProgressText : status === 'RECEIVED' ? colors.limitedText : status === 'COMPLETED' ? colors.availableText : colors.error;
+  return <View style={[styles.badge, { backgroundColor: background }]}><Text style={[styles.badgeText, { color }]}>{repairStatusLabels[status] ?? (status === 'REJECTED' ? 'Bị từ chối' : status)}</Text></View>;
 }
 
 export function RepairRequestRow({ request, variant, onPress }: { request: RepairRequest; variant: 'current' | 'history'; onPress?: () => void }) {
@@ -32,7 +32,7 @@ export function RepairAttachment({ uri, size = 60 }: { uri?: string; size?: numb
   return <LinearGradient colors={[colors.roomImageGradientStart, colors.roomImageGradientEnd]} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={[styles.attachment, { width: size, height: size }]}><Feather name="camera" size={20} color={colors.roomImageIcon} /></LinearGradient>;
 }
 
-export function repairCategoryLabel(category: RepairCategory) { return repairCategories.find((item) => item.id === category)?.label ?? ''; }
+export function repairCategoryLabel(category: RepairCategory) { return [...repairCategories, ...additionalRepairCategories].find((item) => item.id === category)?.label ?? ''; }
 export function repairPriorityLabel(priority: RepairRequest['priority']) { return repairPriorities.find((item) => item.id === priority)?.label ?? ''; }
 
 const styles = StyleSheet.create({

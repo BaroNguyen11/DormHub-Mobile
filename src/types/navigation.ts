@@ -12,8 +12,8 @@ export type GuestStackParamList = {
   Register: undefined;
   RegisterSuccess: undefined;
   ForgotPassword: undefined;
-  OtpConfirm: { email: string };
-  ResetPassword: { email: string };
+  OtpConfirm: { email: string; isMock?: boolean };
+  ResetPassword: { email: string; otp: string; isMock?: boolean };
   ResetSuccess: undefined;
   PasswordChangeSuccess: undefined;
   Unavailable: { title: string };
