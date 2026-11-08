@@ -3,6 +3,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Text as TamaText, YStack } from 'tamagui';
 
 import { ProfileAvatar, ProfileMenuRow } from '../components/ui/ProfileUi';
 import { SurfaceCard } from '../components/ui/ResidenceUi';
@@ -30,18 +31,18 @@ export function ProfileScreen({ navigation }: Props) {
 
   return <ScreenContainer>
     <StatusBar style="dark" />
-    <View style={styles.header}><Text style={styles.headerTitle}>Cá nhân</Text></View>
+    <YStack style={styles.header}><TamaText style={styles.headerTitle}>Cá nhân</TamaText></YStack>
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Pressable accessibilityRole="button" onPress={() => navigation.navigate('EditProfile')} style={styles.identity}>
         <ProfileAvatar profile={profile} size={60} />
-        <View style={styles.identityCopy}>
+        <YStack style={styles.identityCopy}>
           <Text style={styles.name}>{profile.fullName || 'Chưa cập nhật tên'}</Text>
           <Text style={styles.studentMeta}>MSSV: {profile.studentId ?? 'Chưa cập nhật'} · SV Approved</Text>
-        </View>
+        </YStack>
         <Feather name="chevron-right" size={20} color={colors.inactiveTab} />
       </Pressable>
 
-      <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
+      <TamaText style={styles.sectionTitle}>Thông tin cá nhân</TamaText>
       <SurfaceCard style={styles.card}>
         <ProfileMenuRow icon="mail" title="Email" subtitle={profile.email} />
         <ProfileMenuRow icon="phone" title="Số điện thoại" subtitle={profile.phone || 'Chưa cập nhật'} />
@@ -51,14 +52,14 @@ export function ProfileScreen({ navigation }: Props) {
         </Pressable>
       </SurfaceCard>
 
-      <Text style={styles.sectionTitle}>Tài khoản</Text>
+      <TamaText style={styles.sectionTitle}>Tài khoản</TamaText>
       <SurfaceCard style={styles.card}>
         <ProfileMenuRow icon="lock" title="Đổi mật khẩu" onPress={() => navigation.navigate('ChangePassword')} />
         <ProfileMenuRow icon="bell" title="Cài đặt thông báo" onPress={unavailable} />
         <ProfileMenuRow icon="shield" title="Bảo mật" onPress={unavailable} last />
       </SurfaceCard>
 
-      <Text style={styles.sectionTitle}>Ký túc xá</Text>
+      <TamaText style={styles.sectionTitle}>Ký túc xá</TamaText>
       <SurfaceCard style={styles.card}>
         <ProfileMenuRow icon="inbox" title="Phòng hiện tại" subtitle={hasRoom ? `${session.roomId} · ${residentRoom.building}` : 'Chưa có phòng hiện tại'} onPress={() => tabs?.navigate('Room', { screen: hasRoom ? 'MyRoom' : 'Residence' })} />
         <ProfileMenuRow icon="file-text" title="Hợp đồng" subtitle={hasRoom ? undefined : 'Chưa có hợp đồng'} onPress={hasRoom ? () => tabs?.navigate('Room', { screen: 'Contract' }) : undefined} last />

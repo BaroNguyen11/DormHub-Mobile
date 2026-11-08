@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { XStack, YStack } from 'tamagui';
 
 import { DetailRow, ResidenceHeader, SectionHeader, SurfaceCard } from '../components/ui/ResidenceUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
@@ -13,10 +14,10 @@ import type { ResidenceStackParamList } from '../types/navigation';
 export function ContractScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ResidenceStackParamList>>();
   return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Hợp đồng thuê phòng" onBack={() => navigation.goBack()} /><ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-    <SurfaceCard style={styles.numberCard}><View><Text style={styles.label}>Số hợp đồng</Text><Text style={styles.number}>{contractOverview.number}</Text></View><Text style={styles.badge}>Đang hiệu lực</Text></SurfaceCard>
+    <SurfaceCard style={styles.numberCard}><YStack><Text style={styles.label}>Số hợp đồng</Text><Text style={styles.number}>{contractOverview.number}</Text></YStack><Text style={styles.badge}>Đang hiệu lực</Text></SurfaceCard>
     <SurfaceCard><DetailRow label="Phòng" value={contractOverview.roomLabel} /><DetailRow label="Ngày bắt đầu" value={contractOverview.startDate} /><DetailRow label="Ngày kết thúc" value={contractOverview.endDate} /><DetailRow label="Giá phòng / tháng" value={`${contractOverview.monthlyPrice.toLocaleString('vi-VN')}đ`} /><DetailRow label="Tiền cọc" value={`${contractOverview.deposit.toLocaleString('vi-VN')}đ`} last /></SurfaceCard>
-    <SectionHeader title="Điều khoản chính" /><View style={styles.terms}>{contractOverview.terms.map((term) => <Text key={term} style={styles.term}>· {term}</Text>)}</View>
-    <View style={styles.download}><Feather name="download" size={18} color={colors.text} /><Text style={styles.downloadText}>Tải hợp đồng (PDF)</Text></View>
+    <SectionHeader title="Điều khoản chính" /><YStack style={styles.terms}>{contractOverview.terms.map((term) => <Text key={term} style={styles.term}>· {term}</Text>)}</YStack>
+    <XStack style={styles.download}><Feather name="download" size={18} color={colors.text} /><Text style={styles.downloadText}>Tải hợp đồng (PDF)</Text></XStack>
   </ScrollView></ScreenContainer>;
 }
 const styles = StyleSheet.create({

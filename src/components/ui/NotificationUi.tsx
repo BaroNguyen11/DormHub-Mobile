@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text as TamaText, YStack } from 'tamagui';
 
 import { colors, radius, typography } from '../../theme';
 import type { AppNotification, NotificationType } from '../../types/notification';
@@ -12,9 +13,9 @@ const iconNames: Record<NotificationType, IconName> = {
 };
 
 export function NotificationIcon({ type, prominent = false }: { type: NotificationType; prominent?: boolean }) {
-  return <View style={[styles.iconBox, prominent && styles.prominentIcon]}>
+  return <YStack style={[styles.iconBox, prominent && styles.prominentIcon]}>
     <Feather name={iconNames[type]} size={20} color={prominent ? colors.primary : colors.textSecondary} />
-  </View>;
+  </YStack>;
 }
 
 export function NotificationRow({ item, nowIso, onPress }: { item: AppNotification; nowIso: string; onPress: () => void }) {
@@ -25,14 +26,14 @@ export function NotificationRow({ item, nowIso, onPress }: { item: AppNotificati
     style={[styles.card, !item.isRead && styles.unreadCard]}
   >
     <NotificationIcon type={item.type} prominent={!item.isRead} />
-    <View style={styles.copy}>
-      <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-      <Text style={styles.summary} numberOfLines={2}>{item.summary}</Text>
-    </View>
-    <View style={styles.trailing}>
-      <Text style={styles.time}>{notificationTimeLabel(item.createdAt, nowIso)}</Text>
+    <YStack style={styles.copy}>
+      <TamaText style={styles.title} numberOfLines={1}>{item.title}</TamaText>
+      <TamaText style={styles.summary} numberOfLines={2}>{item.summary}</TamaText>
+    </YStack>
+    <YStack style={styles.trailing}>
+      <TamaText style={styles.time}>{notificationTimeLabel(item.createdAt, nowIso)}</TamaText>
       {!item.isRead ? <View style={styles.unreadDot} /> : null}
-    </View>
+    </YStack>
   </Pressable>;
 }
 

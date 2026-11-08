@@ -1,13 +1,14 @@
 import { Feather } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Text as TamaText, YStack } from 'tamagui';
 
 import { colors, typography } from '../../theme';
 import type { ChatConversationType } from '../../types/chat';
 
 export function ChatPartnerAvatar({ type, size = 37 }: { type: ChatConversationType; size?: number }) {
-  return <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }, type === 'CHATBOT' && styles.botAvatar]}>
-    {type === 'MANAGER' ? <Text style={[styles.letter, { fontSize: size * 0.4 }]}>B</Text> : <Feather name="cpu" size={size * 0.48} color={colors.primary} />}
-  </View>;
+  return <YStack style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }, type === 'CHATBOT' && styles.botAvatar]}>
+    {type === 'MANAGER' ? <TamaText style={[styles.letter, { fontSize: size * 0.4 }]}>B</TamaText> : <Feather name="cpu" size={size * 0.48} color={colors.primary} />}
+  </YStack>;
 }
 
 const styles = StyleSheet.create({

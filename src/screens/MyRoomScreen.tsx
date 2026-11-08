@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { XStack, YStack } from 'tamagui';
 
 import { AppButton } from '../components/ui/AppButton';
 import { DetailRow, ResidenceHeader, SectionHeader, SurfaceCard, UtilityMiniCard } from '../components/ui/ResidenceUi';
@@ -14,10 +15,10 @@ import type { ResidenceStackParamList } from '../types/navigation';
 export function MyRoomScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ResidenceStackParamList>>();
   return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Phòng của tôi" showBack={false} /><ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-    <View style={styles.roomHeading}><View><Text style={styles.roomName}>{residentRoom.name}</Text><Text style={styles.roomMeta}>{residentRoom.building} · Tầng {residentRoom.floor}</Text></View><Text style={styles.badge}>Đang ở</Text></View>
+    <XStack style={styles.roomHeading}><YStack><Text style={styles.roomName}>{residentRoom.name}</Text><Text style={styles.roomMeta}>{residentRoom.building} · Tầng {residentRoom.floor}</Text></YStack><Text style={styles.badge}>Đang ở</Text></XStack>
     <SurfaceCard><DetailRow label="Sức chứa" value={`${residentRoom.occupied} / ${residentRoom.capacity} người`} /><DetailRow label="Giá phòng" value={`${residentRoom.monthlyPrice.toLocaleString('vi-VN')}đ / tháng`} /><DetailRow label="Loại phòng" value={`${residentRoom.capacity} người / phòng`} last /></SurfaceCard>
-    <SectionHeader title="Tiện nghi" /><View style={styles.amenities}>{residenceAmenities.map((item) => <View key={item.label} style={styles.amenity}><Feather name={item.icon} size={18} color={colors.textSecondary} /><Text style={styles.amenityText}>{item.label}</Text></View>)}</View>
-    <SectionHeader title="Điện & nước tháng này" action="Chi tiết" onAction={() => navigation.navigate('Utilities')} /><View style={styles.utilities}><UtilityMiniCard kind="electricity" /><UtilityMiniCard kind="water" /></View>
+    <SectionHeader title="Tiện nghi" /><XStack style={styles.amenities}>{residenceAmenities.map((item) => <XStack key={item.label} style={styles.amenity}><Feather name={item.icon} size={18} color={colors.textSecondary} /><Text style={styles.amenityText}>{item.label}</Text></XStack>)}</XStack>
+    <SectionHeader title="Điện & nước tháng này" action="Chi tiết" onAction={() => navigation.navigate('Utilities')} /><XStack style={styles.utilities}><UtilityMiniCard kind="electricity" /><UtilityMiniCard kind="water" /></XStack>
     <SectionHeader title="Thành viên cùng phòng (3)" /><SurfaceCard>{roommates.map((member, index) => <View key={member.name} style={[styles.member, index > 0 && styles.memberBorder]}><View style={[styles.memberAvatar, index === 1 && styles.otherAvatar, index === 2 && styles.thirdAvatar]}><Text style={styles.memberInitials}>{member.initials}</Text></View><View><Text style={styles.memberName}>{member.name}</Text><Text style={styles.memberRole}>{member.role}</Text></View></View>)}</SurfaceCard>
     <AppButton title="Xem hợp đồng" variant="outline" onPress={() => navigation.navigate('Contract')} />
   </ScrollView></ScreenContainer>;

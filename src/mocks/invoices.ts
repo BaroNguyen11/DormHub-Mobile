@@ -6,6 +6,11 @@ export const mockTodayIso = '2026-09-11';
 export const featuredInvoiceId = 'INV-2026-09-A203';
 export const mockPaymentDate = '11/09/2026';
 export const mockPaymentTime = '10:42';
+// Deterministic preview: the July invoice fails on its first attempt, then succeeds on retry.
+// This models a local test result, not a payment gateway response.
+export function mockPaymentSucceeds(invoiceId: string, attempt: number): boolean {
+  return invoiceId !== 'INV-2026-07-A203' || attempt > 1;
+}
 
 function items(room: number, electricity: number, water: number, service: number, kwh?: number, m3?: number): readonly InvoiceLineItem[] {
   return [

@@ -2,7 +2,8 @@ import { Feather } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Input, Text as TamaText, XStack, YStack } from 'tamagui';
 
 import { ChatPartnerAvatar } from '../components/ui/ChatUi';
 import { ProfileAvatar } from '../components/ui/ProfileUi';
@@ -32,21 +33,21 @@ export function ChatMessageScreen({ navigation, route }: Props) {
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const mine = item.sender === 'STUDENT';
-    return <View style={[styles.messageRow, mine && styles.myMessageRow]}>
+    return <XStack style={[styles.messageRow, mine && styles.myMessageRow]}>
       {!mine && conversation ? <ChatPartnerAvatar type={conversation.type} /> : null}
-      <View style={styles.bubble}><Text style={styles.messageText}>{item.text}</Text></View>
+      <YStack style={styles.bubble}><TamaText style={styles.messageText}>{item.text}</TamaText></YStack>
       {mine && profile ? <ProfileAvatar profile={profile} size={37} /> : null}
-    </View>;
+    </XStack>;
   };
 
   return <ScreenContainer backgroundColor={colors.surface}>
     <StatusBar style="dark" />
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
+      <XStack style={styles.header}>
         <Pressable accessibilityRole="button" accessibilityLabel="Quay lại" onPress={() => navigation.goBack()} style={styles.back}><Feather name="arrow-left" size={24} color={colors.text} /></Pressable>
         {conversation ? <ChatPartnerAvatar type={conversation.type} /> : null}
         <Text style={styles.headerTitle}>{conversation?.title ?? 'Tin nhắn'}</Text>
-      </View>
+      </XStack>
       {conversation ? <>
         <FlatList
           ref={listRef}
@@ -59,11 +60,11 @@ export function ChatMessageScreen({ navigation, route }: Props) {
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
           ListHeaderComponent={conversation.messages.length ? <Text style={styles.timeLabel}>{chatClockLabel(conversation.messages[0].createdAt)}</Text> : undefined}
         />
-        <View style={styles.composer}>
+        <XStack style={styles.composer}>
           <Pressable accessibilityRole="button" accessibilityLabel="Đính kèm" onPress={() => Alert.alert('Chưa hỗ trợ', 'Đính kèm chưa có trong bản xem thử.')} style={styles.addButton}><Feather name="plus" size={22} color={colors.surface} /></Pressable>
-          <TextInput accessibilityLabel="Nội dung tin nhắn" value={draft} onChangeText={setDraft} onSubmitEditing={submit} returnKeyType="send" placeholder="Aa" placeholderTextColor={colors.inactiveTab} style={styles.input} />
+          <Input size={false} borderWidth={0} accessibilityLabel="Nội dung tin nhắn" value={draft} onChangeText={setDraft} onSubmitEditing={submit} returnKeyType="send" placeholder="Aa" placeholderTextColor="inactiveTab" style={styles.input} />
           <Pressable accessibilityRole="button" accessibilityLabel="Gửi tin nhắn" accessibilityState={{ disabled: !draft.trim() }} disabled={!draft.trim()} onPress={submit} style={styles.sendButton}><Feather name="send" size={25} color={draft.trim() ? colors.primary : colors.inactiveTab} /></Pressable>
-        </View>
+        </XStack>
       </> : <View style={styles.missing}><Text style={styles.missingText}>Không tìm thấy cuộc trò chuyện.</Text></View>}
     </KeyboardAvoidingView>
   </ScreenContainer>;

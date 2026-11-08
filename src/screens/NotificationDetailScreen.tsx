@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Card, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '../components/ui/AppButton';
 import { NotificationIcon } from '../components/ui/NotificationUi';
@@ -48,27 +49,27 @@ export function NotificationDetailScreen({ navigation, route }: Props) {
 
   return <ScreenContainer>
     <StatusBar style="dark" />
-    <View style={styles.header}>
+    <XStack style={styles.header}>
       <Pressable accessibilityRole="button" accessibilityLabel="Quay lại" onPress={() => navigation.goBack()} style={styles.back}>
         <Feather name="arrow-left" size={24} color={colors.text} />
       </Pressable>
       <Text style={styles.headerTitle}>Chi tiết thông báo</Text>
-    </View>
+    </XStack>
     {notification ? <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <View style={styles.heading}>
+      <XStack style={styles.heading}>
         <NotificationIcon type={notification.type} prominent />
-        <View style={styles.headingCopy}>
+        <YStack style={styles.headingCopy}>
           <Text style={styles.title}>{notification.title}</Text>
           <Text style={styles.date}>{notificationDateTime(notification.createdAt)}</Text>
-        </View>
-      </View>
-      <View style={styles.bodyCard}>
+        </YStack>
+      </XStack>
+      <Card size={false} style={styles.bodyCard}>
         <Text style={styles.body}>
           {bodyParts(notification.body, notification.emphasis ?? []).map((part, index) =>
             notification.emphasis?.includes(part) ? <Text key={index} style={styles.emphasis}>{part}</Text> : part,
           )}
         </Text>
-      </View>
+      </Card>
       {canOpenInvoice ? <View style={styles.action}><AppButton title="Xem hóa đơn" onPress={openInvoice} /></View> : null}
     </ScrollView> : <Text style={styles.missing}>Không tìm thấy thông báo.</Text>}
   </ScreenContainer>;

@@ -4,6 +4,7 @@ import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-n
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { XStack, YStack } from 'tamagui';
 
 import { AppButton } from '../components/ui/AppButton';
 import { FormField } from '../components/ui/FormField';
@@ -41,17 +42,17 @@ export function ChangePasswordScreen({ navigation }: Props) {
 
   return <ScreenContainer>
     <StatusBar style="dark" />
-    <View style={styles.header}>
+    <XStack style={styles.header}>
       <Pressable accessibilityRole="button" accessibilityLabel="Quay lại" onPress={() => navigation.goBack()} style={styles.back}><Feather name="arrow-left" size={24} color={colors.text} /></Pressable>
       <Text style={styles.headerTitle}>Đổi mật khẩu</Text>
-    </View>
+    </XStack>
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-      <View style={styles.fields}>
+      <YStack style={styles.fields}>
         <FormField label="Mật khẩu hiện tại" value={form.currentPassword} onChangeText={(value) => setField('currentPassword', value)} placeholder="••••••••" secure autoComplete="current-password" error={errors.currentPassword} />
         <FormField label="Mật khẩu mới" value={form.newPassword} onChangeText={(value) => setField('newPassword', value)} placeholder="Tối thiểu 8 ký tự" secure autoComplete="new-password" error={errors.newPassword} />
         <FormField label="Xác nhận mật khẩu mới" value={form.confirmPassword} onChangeText={(value) => setField('confirmPassword', value)} placeholder="Nhập lại mật khẩu mới" secure autoComplete="new-password" error={errors.confirmPassword} />
-      </View>
-      <View style={styles.submit}><AppButton title="Cập nhật mật khẩu" onPress={submit} /></View>
+      </YStack>
+      <YStack style={styles.submit}><AppButton title="Cập nhật mật khẩu" onPress={submit} /></YStack>
     </ScrollView>
   </ScreenContainer>;
 }

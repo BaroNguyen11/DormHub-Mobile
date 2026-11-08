@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { SectionList, StyleSheet, Text, Pressable, View } from 'react-native';
+import { Text as TamaText, YStack } from 'tamagui';
 
 import { NotificationRow } from '../components/ui/NotificationUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
@@ -18,7 +19,7 @@ export function NotificationCenterScreen({ navigation }: Props) {
 
   return <ScreenContainer>
     <StatusBar style="dark" />
-    <View style={styles.header}><Text style={styles.headerTitle}>Thông báo</Text></View>
+    <YStack style={styles.header}><TamaText style={styles.headerTitle}>Thông báo</TamaText></YStack>
     <SectionList
       sections={sections}
       keyExtractor={(item) => item.id}
@@ -26,10 +27,10 @@ export function NotificationCenterScreen({ navigation }: Props) {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.content}
       ListHeaderComponent={notifications.length ? <Pressable accessibilityRole="button" onPress={markAllRead} style={styles.markAll}><Text style={styles.markAllText}>Đánh dấu đã đọc tất cả</Text></Pressable> : undefined}
-      renderSectionHeader={({ section }) => <Text style={[styles.sectionTitle, section.title !== sections[0]?.title && styles.laterSection]}>{section.title}</Text>}
+      renderSectionHeader={({ section }) => <TamaText style={[styles.sectionTitle, section.title !== sections[0]?.title && styles.laterSection]}>{section.title}</TamaText>}
       renderItem={({ item }) => <NotificationRow item={item} nowIso={mockNotificationNowIso} onPress={() => navigation.navigate('NotificationDetail', { notificationId: item.id })} />}
       ItemSeparatorComponent={() => <View style={styles.itemGap} />}
-      ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyTitle}>Chưa có thông báo</Text><Text style={styles.emptyBody}>Thông báo mới sẽ xuất hiện tại đây.</Text></View>}
+      ListEmptyComponent={<YStack style={styles.empty}><TamaText style={styles.emptyTitle}>Chưa có thông báo</TamaText><TamaText style={styles.emptyBody}>Thông báo mới sẽ xuất hiện tại đây.</TamaText></YStack>}
     />
   </ScreenContainer>;
 }

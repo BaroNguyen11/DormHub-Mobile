@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import type { ComponentProps, PropsWithChildren } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Card, Text as TamaText, XStack, YStack } from 'tamagui';
 import { studentProfile, utilityOverview } from '../../mocks/residence';
 import { useMockAccount } from '../../context/MockAccountContext';
 import { colors, radius, typography } from '../../theme';
@@ -11,27 +12,27 @@ type Icon = ComponentProps<typeof Feather>['name'];
 export function StudentHeader({ onMessage }: { onMessage?: () => void }) {
   const { profile } = useMockAccount();
   const displayName = profile?.fullName.trim().split(/\s+/).filter(Boolean).slice(-1)[0] || profile?.accountId || '';
-  return <View style={styles.studentHeader}>
+  return <XStack style={styles.studentHeader}>
     {profile ? <ProfileAvatar profile={profile} size={44} /> : <View style={styles.avatar} />}
-    <View style={styles.studentCopy}>
-      <Text style={styles.studentName}>Xin chào, {displayName} 👋</Text>
-      <Text style={styles.studentDate}>{studentProfile.greetingDate}</Text>
-    </View>
+    <YStack style={styles.studentCopy}>
+      <TamaText style={styles.studentName}>Xin chào, {displayName} 👋</TamaText>
+      <TamaText style={styles.studentDate}>{studentProfile.greetingDate}</TamaText>
+    </YStack>
     <Pressable accessibilityRole={onMessage ? 'button' : undefined} accessibilityLabel={onMessage ? 'Tin nhắn' : undefined} disabled={!onMessage} onPress={onMessage} style={styles.message}>
       <Feather name="message-circle" size={24} color={colors.text} /><View style={styles.dot} />
     </Pressable>
-  </View>;
+  </XStack>;
 }
 
-export function ResidenceHeader({ title, onBack, showBack = true }: { title: string; onBack?: () => void; showBack?: boolean }) { return <View style={styles.pageHeader}>{showBack ? <Pressable onPress={onBack} accessibilityLabel="Quay lại" style={styles.back}><Feather name="arrow-left" size={22} color={colors.text} /></Pressable> : null}<Text style={styles.pageTitle}>{title}</Text></View>; }
+export function ResidenceHeader({ title, onBack, showBack = true }: { title: string; onBack?: () => void; showBack?: boolean }) { return <XStack style={styles.pageHeader}>{showBack ? <Pressable onPress={onBack} accessibilityLabel="Quay lại" style={styles.back}><Feather name="arrow-left" size={22} color={colors.text} /></Pressable> : null}<TamaText style={styles.pageTitle}>{title}</TamaText></XStack>; }
 
-export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) { return <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{title}</Text>{action && onAction ? <Pressable onPress={onAction}><Text style={styles.sectionAction}>{action}</Text></Pressable> : null}</View>; }
+export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) { return <XStack style={styles.sectionHeader}><TamaText style={styles.sectionTitle}>{title}</TamaText>{action && onAction ? <Pressable onPress={onAction}><TamaText style={styles.sectionAction}>{action}</TamaText></Pressable> : null}</XStack>; }
 
-export function DetailRow({ label, value, last = false }: { label: string; value: string; last?: boolean }) { return <View style={[styles.detailRow, !last && styles.detailBorder]}><Text style={styles.detailLabel}>{label}</Text><Text style={styles.detailValue}>{value}</Text></View>; }
+export function DetailRow({ label, value, last = false }: { label: string; value: string; last?: boolean }) { return <XStack style={[styles.detailRow, !last && styles.detailBorder]}><TamaText style={styles.detailLabel}>{label}</TamaText><TamaText style={styles.detailValue}>{value}</TamaText></XStack>; }
 
-export function SurfaceCard({ children, style }: PropsWithChildren<{ style?: object }>) { return <View style={[styles.surfaceCard, style]}>{children}</View>; }
+export function SurfaceCard({ children, style }: PropsWithChildren<{ style?: object }>) { return <Card size={false} style={[styles.surfaceCard, style]}>{children}</Card>; }
 
-export function UtilityMiniCard({ kind }: { kind: 'electricity' | 'water' }) { const electricity = kind === 'electricity'; const value = electricity ? `${utilityOverview.electricityKwh} kWh` : `${utilityOverview.waterM3} m³`; const delta = electricity ? `+${utilityOverview.electricityKwh - utilityOverview.previousElectricityKwh} kWh so với tháng trước` : 'Không thay đổi'; return <SurfaceCard style={styles.utilityMini}><View style={styles.utilityHeading}><Feather name={electricity ? 'zap' : 'droplet'} size={17} color={electricity ? '#C67A14' : '#2674C6'} /><Text style={styles.utilityLabel}>{electricity ? 'Điện' : 'Nước'}</Text></View><Text style={styles.utilityValue}>{value}</Text><Text style={[styles.utilityDelta, electricity && styles.increase]}>{delta}</Text></SurfaceCard>; }
+export function UtilityMiniCard({ kind }: { kind: 'electricity' | 'water' }) { const electricity = kind === 'electricity'; const value = electricity ? `${utilityOverview.electricityKwh} kWh` : `${utilityOverview.waterM3} m³`; const delta = electricity ? `+${utilityOverview.electricityKwh - utilityOverview.previousElectricityKwh} kWh so với tháng trước` : 'Không thay đổi'; return <SurfaceCard style={styles.utilityMini}><XStack style={styles.utilityHeading}><Feather name={electricity ? 'zap' : 'droplet'} size={17} color={electricity ? '#C67A14' : '#2674C6'} /><Text style={styles.utilityLabel}>{electricity ? 'Điện' : 'Nước'}</Text></XStack><Text style={styles.utilityValue}>{value}</Text><Text style={[styles.utilityDelta, electricity && styles.increase]}>{delta}</Text></SurfaceCard>; }
 
 export function IconTile({ icon, label, onPress }: { icon: Icon; label: string; onPress?: () => void }) { return <Pressable style={styles.iconTile} disabled={!onPress} onPress={onPress}><View style={styles.iconBox}><Feather name={icon} size={21} color={colors.primary} /></View><Text style={styles.iconLabel}>{label}</Text></Pressable>; }
 

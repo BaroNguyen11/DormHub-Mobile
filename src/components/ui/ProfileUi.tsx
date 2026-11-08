@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text as TamaText, YStack } from 'tamagui';
 
 import { colors, radius, typography } from '../../theme';
 import type { AccountProfile } from '../../types/profile';
@@ -22,10 +23,10 @@ export function ProfileAvatar({ profile, size, camera = false }: { profile: Acco
 export function ProfileMenuRow({ icon, title, subtitle, onPress, last = false, accent = false }: { icon: IconName; title: string; subtitle?: string; onPress?: () => void; last?: boolean; accent?: boolean }) {
   return <Pressable accessibilityRole={onPress ? 'button' : undefined} disabled={!onPress} onPress={onPress} style={[styles.row, !last && styles.border]}>
     <View style={styles.iconBox}><Feather name={icon} size={19} color={colors.textSecondary} /></View>
-    <View style={styles.rowCopy}>
-      <Text style={[styles.rowTitle, accent && styles.accent]}>{title}</Text>
-      {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
-    </View>
+    <YStack style={styles.rowCopy}>
+      <TamaText style={[styles.rowTitle, accent && styles.accent]}>{title}</TamaText>
+      {subtitle ? <TamaText style={styles.rowSubtitle}>{subtitle}</TamaText> : null}
+    </YStack>
     {onPress ? <Feather name="chevron-right" size={20} color={colors.inactiveTab} /> : null}
   </Pressable>;
 }
