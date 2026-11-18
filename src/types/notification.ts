@@ -1,4 +1,4 @@
-// Frontend preview model. This is not a Spring Boot DTO.
+// UI model mapped from the notification API.
 export type NotificationType = 'INVOICE' | 'REPAIR' | 'CONTRACT' | 'PAYMENT' | 'SYSTEM';
 
 export interface AppNotification {

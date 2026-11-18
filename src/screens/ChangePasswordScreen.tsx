@@ -8,7 +8,6 @@ import { XStack, YStack } from 'tamagui';
 import { AppButton } from '../components/ui/AppButton';
 import { FormField } from '../components/ui/FormField';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
-import { useMockAccount } from '../context/MockAccountContext';
 import { useAuth } from '../context/AuthContext';
 import { changePassword as changePasswordApi } from '../api/auth';
 import { ApiError } from '../api/httpClient';
@@ -23,7 +22,6 @@ const emptyForm: ChangePasswordForm = { currentPassword: '', newPassword: '', co
 
 export function ChangePasswordScreen({ navigation }: Props) {
   const auth = useAuth();
-  const { changePassword, logout } = useMockAccount();
   const [form, setForm] = useState<ChangePasswordForm>(emptyForm);
   const [errors, setErrors] = useState<FieldErrors<keyof ChangePasswordForm>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -58,12 +56,7 @@ export function ChangePasswordScreen({ navigation }: Props) {
       }
       return;
     }
-    const result = changePassword(form.currentPassword, form.newPassword);
-    if (result === 'incorrect') { setErrors({ currentPassword: 'Mật khẩu hiện tại không đúng' }); return; }
-    if (result === 'invalid') { setErrors({ newPassword: 'Mật khẩu mới không hợp lệ' }); return; }
-    if (result !== 'success') return;
-    setForm(emptyForm);
-    logout('PasswordChangeSuccess');
+    setRequestError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
   };
 
   return <ScreenContainer>

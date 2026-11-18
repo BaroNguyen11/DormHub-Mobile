@@ -41,8 +41,7 @@ type AuthEvent =
   | 'Navigation ineligible: student'
   | 'Navigation mode: splash'
   | 'Navigation mode: guest'
-  | 'Navigation mode: student'
-  | 'Navigation mode: preview';
+  | 'Navigation mode: student';
 
 export function authDevLog(event: AuthEvent, httpStatus?: number): void {
   if (!__DEV__) return;

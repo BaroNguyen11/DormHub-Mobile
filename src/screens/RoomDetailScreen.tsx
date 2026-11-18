@@ -3,12 +3,17 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator } from 'react-native';
+import { useEffect, useState } from 'react';
 import { Text as TamaText, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '../components/ui/AppButton';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { roomDetails } from '../mocks/rooms';
+import { getRoom } from '../api/residence';
+import { ApiError } from '../api/httpClient';
+import type { RoomDetail } from '../types/room';
+import { roomDtoToDetail } from '../utils/room';
 import { colors, radius, typography } from '../theme';
 import type { GuestStackParamList } from '../types/navigation';
 
@@ -19,9 +24,22 @@ export function RoomDetailScreen({ navigation, route }: Props) {
   return <RoomDetailView roomId={route.params.roomId} onBack={() => navigation.goBack()} onApply={() => navigation.navigate('Login')} />;
 }
 
-interface RoomDetailViewProps { roomId: string; onBack: () => void; onApply: () => void }
-export function RoomDetailView({ roomId, onBack, onApply }: RoomDetailViewProps) {
-  const room = roomDetails[roomId];
+interface RoomDetailViewProps { roomId: string; onBack: () => void; onApply: () => void; student?: boolean }
+export function RoomDetailView({ roomId, onBack, onApply, student = false }: RoomDetailViewProps) {
+  const [room, setRoom] = useState<RoomDetail | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    let active = true;
+    setLoading(true); setError(undefined);
+    getRoom(roomId, student).then((result) => { if (active) setRoom(roomDtoToDetail(result.data)); })
+      .catch((cause: unknown) => { if (active) setError(cause instanceof ApiError ? cause.message : 'Không tải được thông tin phòng. Vui lòng thử lại.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [roomId, student, reload]);
+  if (loading) return <ScreenContainer><ActivityIndicator color={colors.primary} size="large" /></ScreenContainer>;
+  if (error) return <ScreenContainer><Pressable style={styles.back} onPress={onBack}><Feather name="arrow-left" size={22} color={colors.text} /></Pressable><Text style={styles.missing}>{error}</Text><Pressable onPress={() => setReload((value) => value + 1)}><Text style={styles.retry}>Thử lại</Text></Pressable></ScreenContainer>;
   if (!room) return <ScreenContainer><Text style={styles.missing}>Không tìm thấy thông tin phòng.</Text></ScreenContainer>;
   const available = room.capacity - room.occupied;
   return (
@@ -54,5 +72,5 @@ const styles = StyleSheet.create({
   main: { paddingHorizontal: 20, paddingTop: 18 }, heading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }, name: { color: colors.text, fontFamily: typography.bold, fontSize: 22 }, location: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13, marginTop: 4 },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 16 }, price: { color: colors.primary, fontFamily: typography.bold, fontSize: 21 }, priceUnit: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13 }, occupancy: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 10 }, occupancyText: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 18 }, sectionTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 16, marginBottom: 12 }, amenities: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 }, amenity: { width: '50%', flexDirection: 'row', gap: 9, alignItems: 'center' }, bodyText: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13, lineHeight: 20, flexShrink: 1 }, description: { color: colors.textSecondary, fontFamily: typography.regular, fontSize: 13, lineHeight: 21 }, rule: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }, bullet: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.textSecondary },
-  footer: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, borderTopColor: colors.border, borderTopWidth: 1, backgroundColor: colors.surface }, missing: { padding: 20, color: colors.text },
+  footer: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, borderTopColor: colors.border, borderTopWidth: 1, backgroundColor: colors.surface }, missing: { padding: 20, color: colors.text }, retry: { color: colors.primary, paddingHorizontal: 20, fontFamily: typography.bold },
 });

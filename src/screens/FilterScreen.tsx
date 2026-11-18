@@ -6,7 +6,7 @@ import { Text, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '../components/ui/AppButton';
 import { FilterChip } from '../components/ui/FilterChip';
-import { emptyRoomFilters } from '../mocks/rooms';
+import { emptyRoomFilters } from '../constants/roomFilters';
 import { colors, radius, typography } from '../theme';
 import type { GuestStackParamList } from '../types/navigation';
 import type { RoomSearchFilters } from '../types/room';

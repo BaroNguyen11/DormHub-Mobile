@@ -1,19 +1,18 @@
 import { Pressable, StyleSheet } from 'react-native';
 import { Text as TamaText, XStack, YStack } from 'tamagui';
-import { mockTodayIso } from '../../mocks/invoices';
 import { colors, radius, typography } from '../../theme';
 import type { InvoiceDetail } from '../../types/invoice';
 import { daysOverdue, formatIsoDate, formatVnd } from '../../utils/invoice';
 
 export function InvoiceStatusBadge({ invoice }: { invoice: InvoiceDetail }) {
-  const overdue = daysOverdue(invoice, mockTodayIso) > 0;
+  const overdue = daysOverdue(invoice, new Date().toISOString().slice(0, 10)) > 0;
   const paid = invoice.status === 'PAID';
   const label = paid ? 'Đã thanh toán' : invoice.status === 'CANCELLED' ? 'Đã hủy' : overdue ? 'Quá hạn' : 'Chưa thanh toán';
   return <XStack style={[styles.badge, { backgroundColor: paid ? colors.availableBackground : overdue ? colors.invoiceOverdueBadge : invoice.status === 'CANCELLED' ? colors.fullBackground : colors.limitedBackground }]}><TamaText style={[styles.badgeText, { color: paid ? colors.availableText : overdue ? colors.error : invoice.status === 'CANCELLED' ? colors.textSecondary : colors.limitedText }]}>{label}</TamaText></XStack>;
 }
 
 export function InvoiceCard({ invoice, onPress }: { invoice: InvoiceDetail; onPress: () => void }) {
-  const overdue = daysOverdue(invoice, mockTodayIso);
+  const overdue = daysOverdue(invoice, new Date().toISOString().slice(0, 10));
   const pending = invoice.status === 'UNPAID' && overdue === 0;
   const subtitle = invoice.status === 'PAID' ? `Đã thanh toán ${invoice.paidAt ?? ''}` : invoice.status === 'CANCELLED' ? 'Đã hủy' : overdue > 0 ? `Quá hạn ${overdue} ngày` : `Hạn: ${formatIsoDate(invoice.dueDate)}`;
   return <Pressable accessibilityRole="button" onPress={onPress} style={[styles.card, pending && styles.pendingCard, overdue > 0 && styles.overdueCard]}><XStack style={styles.cardTop}><YStack style={styles.cardCopy}><TamaText style={styles.cardTitle}>{invoice.title}</TamaText><TamaText style={styles.cardSubtitle}>{subtitle}</TamaText></YStack><InvoiceStatusBadge invoice={invoice} /></XStack><TamaText style={styles.amount}>{formatVnd(invoice.totalAmount)}</TamaText></Pressable>;

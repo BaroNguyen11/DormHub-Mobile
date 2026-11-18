@@ -15,5 +15,11 @@ export interface StudentProfile {
 }
 
 export interface StudentProfileUpdate {
-  phone: string;
+  phone?: string;
+  studentCode?: string;
+  dateOfBirth?: string;
+  gender?: StudentGender;
+  address?: string;
+  cic?: string;
+  avatarUrl?: string;
 }

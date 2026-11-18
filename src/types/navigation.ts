@@ -1,22 +1,21 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { RoomSearchFilters } from './room';
 import type { PaymentMethod } from './invoice';
-import type { ChatConversationId } from './chat';
 
 export type GuestStackParamList = {
   Welcome: undefined;
   Explore: { filters?: RoomSearchFilters } | undefined;
   Filter: { initialFilters: RoomSearchFilters };
   RoomDetail: { roomId: string };
-  Login: { status?: 'pending' | 'invalid' } | undefined;
+  Login: { status?: 'pending' | 'invalid' | 'verified'; message?: string } | undefined;
+  ActivateAccount: undefined;
   Register: undefined;
   RegisterSuccess: undefined;
   ForgotPassword: undefined;
   OtpConfirm: { email: string };
-  ResetPassword: { email: string };
+  ResetPassword: { email: string; otp: string };
   ResetSuccess: undefined;
   PasswordChangeSuccess: undefined;
-  Unavailable: { title: string };
 };
 
 export type StudentTabsParamList = {
@@ -69,10 +68,4 @@ export type RootStackParamList = {
   Splash: undefined;
   Guest: NavigatorScreenParams<GuestStackParamList> | undefined;
   Student: NavigatorScreenParams<StudentTabsParamList> | undefined;
-  Chat: NavigatorScreenParams<ChatStackParamList> | undefined;
-};
-
-export type ChatStackParamList = {
-  ChatList: undefined;
-  ChatMessage: { conversationId: ChatConversationId };
 };

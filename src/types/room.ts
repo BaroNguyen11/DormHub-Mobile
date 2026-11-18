@@ -1,5 +1,5 @@
-// Frontend view model for the Figma demo, not a Spring Boot DTO.
-export interface RoomPreview {
+// UI model mapped from the public and student room APIs.
+export interface RoomListItem {
   id: string;
   name: string;
   building: string;
@@ -8,6 +8,19 @@ export interface RoomPreview {
   occupied: number;
   capacity: number;
   amenity?: string;
+}
+
+// RoomResponse returned by the public and student room endpoints.
+export interface RoomDto {
+  id: number;
+  roomNumber: string;
+  floor: number | null;
+  buildingName: string | null;
+  capacity: number | null;
+  currentOccupancy: number | null;
+  pricePerMonth: number | string | null;
+  status: string | null;
+  description: string | null;
 }
 
 export type RoomFilter = 'all' | 'buildingA' | 'buildingB' | 'under1500000' | 'available';
@@ -19,7 +32,7 @@ export interface RoomSearchFilters {
   onlyAvailable: boolean;
 }
 
-export interface RoomDetail extends RoomPreview {
+export interface RoomDetail extends RoomListItem {
   photoAsset?: number;
   description?: string;
   amenities: readonly string[];

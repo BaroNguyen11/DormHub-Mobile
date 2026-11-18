@@ -7,17 +7,13 @@ import { Text, YStack } from 'tamagui';
 import { AppButton } from '../components/ui/AppButton';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
 import { colors, radius, spacing, typography } from '../theme';
+import { useAuth } from '../context/AuthContext';
 import type { GuestStackParamList } from '../types/navigation';
-import { useMockAccount } from '../context/MockAccountContext';
-import { devPreviewEnabled } from '../config/devPreview';
 
 type Props = NativeStackScreenProps<GuestStackParamList, 'Welcome'>;
 
 export function WelcomeScreen({ navigation }: Props) {
-  const { activateDevAccount } = useMockAccount();
-  const enterDevPreview = () => {
-    if (devPreviewEnabled) activateDevAccount('student');
-  };
+  const { sessionError } = useAuth();
   return (
     <ScreenContainer>
       <StatusBar hidden={false} style="dark" />
@@ -26,13 +22,15 @@ export function WelcomeScreen({ navigation }: Props) {
           <Image source={require('../../assets/figma/welcome-room.png')} contentFit="cover" style={styles.illustration} />
           <YStack style={styles.copy}>
             <Text color={colors.text} fontFamily="body" fontWeight="400" fontSize={typography.welcomeTitle} lineHeight="29px" textAlign="center">Ký túc xá của bạn,{'\n'}gọn trong một ứng dụng</Text>
-            <Text color={colors.textSecondary} fontFamily="body" fontWeight="400" fontSize={12} lineHeight="20px" textAlign="center" marginTop={8}>Tìm phòng, theo dõi hóa đơn, điện nước và gửi yêu cầu sửa chữa — tất cả tại một nơi.</Text>
+            <Text color={colors.textSecondary} fontFamily="body" fontWeight="400" fontSize={12} lineHeight="20px" textAlign="center" marginTop={8}>Tìm phòng, theo dõi hóa đơn và gửi yêu cầu sửa chữa — tất cả tại một nơi.</Text>
           </YStack>
         </YStack>
         <YStack style={styles.actions}>
+          {sessionError ? <Text color={colors.error} fontFamily="body" fontSize={12} textAlign="center">{sessionError}</Text> : null}
           <AppButton title="Đăng nhập" onPress={() => navigation.navigate('Login')} />
+          <AppButton title="Tạo tài khoản" variant="outline" onPress={() => navigation.navigate('Register')} />
+          <AppButton title="Kích hoạt tài khoản" variant="text" onPress={() => navigation.navigate('ActivateAccount')} />
           <AppButton title="Khám phá phòng" variant="text" onPress={() => navigation.navigate('Explore')} />
-          {devPreviewEnabled ? <AppButton title="Xem thử giao diện (Dev)" variant="text" onPress={enterDevPreview} /> : null}
         </YStack>
       </ScrollView>
     </ScreenContainer>

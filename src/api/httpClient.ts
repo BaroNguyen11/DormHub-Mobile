@@ -1,4 +1,5 @@
 import { fetch as expoFetch } from 'expo/fetch';
+import { File } from 'expo-file-system';
 import { authDevLog } from '../utils/authDiagnostics';
 
 export interface ApiResponse<T> {
@@ -112,12 +113,20 @@ async function sendOnce<T>(path: string, options: RequestOptions): Promise<ApiRe
         : 'CSRF Set-Cookie header not exposed');
     }
     try {
-      payload = await Promise.race([response.json(), deadline]);
+      const responseText = await Promise.race([response.text(), deadline]);
+      try {
+        payload = JSON.parse(responseText) as unknown;
+      } catch {
+        if (responseText.includes('ERR_NGROK_3200')) {
+          throw new ApiError('Đường dẫn Backend qua ngrok đang offline. Hãy khởi động lại tunnel và cập nhật EXPO_PUBLIC_API_BASE_URL.', response.status);
+        }
+        throw new ApiError(`Backend trả nội dung không phải JSON (HTTP ${response.status}). Kiểm tra địa chỉ API và trạng thái Backend.`, response.status);
+      }
     } catch (error) {
       if (error instanceof ApiError) throw error;
       if (path === '/api/v1/auth/logout' && response.status === 403) authDevLog('Logout 403 response: invalid JSON');
       if (isChangePassword && response.status === 403) authDevLog('Change password 403 response: invalid JSON');
-      throw new ApiError('Backend không trả JSON hợp lệ.', response.status);
+      throw new ApiError(`Không đọc được phản hồi từ Backend (HTTP ${response.status}).`, response.status);
     }
   } finally {
     if (timer) clearTimeout(timer);
@@ -199,6 +208,25 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if (options.csrf) await ensureCsrf();
     return sendOnce<T>(path, { ...options, retryOnUnauthorized: false });
   }
+}
+
+export async function uploadImage(uri: string): Promise<string> {
+  await ensureCsrf();
+  const file = new File(uri);
+  const form = new FormData();
+  form.append('file', file);
+  const response = await expoFetch(`${apiBaseUrl()}/api/v1/upload`, {
+    method: 'POST', credentials: 'include',
+    headers: { Accept: 'application/json', ...(csrfToken ? { 'X-XSRF-TOKEN': csrfToken } : {}) },
+    body: form,
+  });
+  let payload: unknown;
+  try { payload = await response.json(); } catch { throw new ApiError('Backend không trả JSON hợp lệ khi tải ảnh lên.', response.status); }
+  if (!payload || typeof payload !== 'object' || !('code' in payload) || !('message' in payload) || !('data' in payload)) throw new ApiError('Response upload không đúng dạng ApiResponse.', response.status);
+  const result = payload as ApiResponse<{ url?: string }>;
+  if (!response.ok || result.code !== 'SUCCESS') throw new ApiError(result.message || 'Tải ảnh lên thất bại.', response.status, result.code);
+  if (!result.data?.url) throw new ApiError('Backend không trả về đường dẫn ảnh.', response.status);
+  return result.data.url;
 }
 
 export async function loginSession(email: string, password: string): Promise<ApiResult<AuthUserResponse>> {

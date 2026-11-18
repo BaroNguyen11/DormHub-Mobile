@@ -7,11 +7,8 @@ import { RootStack } from "./src/navigation/RootStack";
 import { ResidenceProvider } from "./src/context/ResidenceContext";
 import { InvoiceProvider } from "./src/context/InvoiceContext";
 import { RepairProvider } from "./src/context/RepairContext";
-import { MockAccountProvider } from "./src/context/MockAccountContext";
-import { ChatProvider } from "./src/context/ChatContext";
 import { NotificationProvider } from "./src/context/NotificationContext";
 import { tamaguiConfig } from "./tamagui.config";
-import { AuthPocPanel } from "./src/components/dev/AuthPocPanel";
 import { AuthProvider } from "./src/context/AuthContext";
 
 export default function App() {
@@ -26,24 +23,19 @@ export default function App() {
   return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
       <SafeAreaProvider>
-        <ResidenceProvider>
-          <InvoiceProvider>
-            <RepairProvider>
-              <NotificationProvider>
-                <MockAccountProvider>
-                  <ChatProvider>
-                    <AuthProvider>
-                      <NavigationContainer>
-                        <RootStack />
-                      </NavigationContainer>
-                      {__DEV__ ? <AuthPocPanel /> : null}
-                    </AuthProvider>
-                  </ChatProvider>
-                </MockAccountProvider>
-              </NotificationProvider>
-            </RepairProvider>
-          </InvoiceProvider>
-        </ResidenceProvider>
+        <AuthProvider>
+          <ResidenceProvider>
+            <InvoiceProvider>
+              <RepairProvider>
+                <NotificationProvider>
+                  <NavigationContainer>
+                    <RootStack />
+                  </NavigationContainer>
+                </NotificationProvider>
+              </RepairProvider>
+            </InvoiceProvider>
+          </ResidenceProvider>
+        </AuthProvider>
       </SafeAreaProvider>
     </TamaguiProvider>
   );

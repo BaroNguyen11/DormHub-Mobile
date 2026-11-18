@@ -3,7 +3,6 @@ import type { PropsWithChildren } from 'react';
 import { getMe, login, logout } from '../api/auth';
 import type { AuthUser } from '../api/auth';
 import { ApiError } from '../api/httpClient';
-import { useMockAccount } from './MockAccountContext';
 import { authDevLog } from '../utils/authDiagnostics';
 
 type AuthState =
@@ -12,6 +11,7 @@ type AuthState =
   | { status: 'authenticated'; user: AuthUser };
 
 type AuthContextValue = AuthState & {
+  sessionError: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   recheckSession: () => Promise<void>;
@@ -25,24 +25,28 @@ function isActiveStudent(user: AuthUser | null | undefined): user is AuthUser {
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AuthState>({ status: 'loading', user: null });
-  const { logout: clearPreview } = useMockAccount();
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     getMe().then((result) => {
       if (!mounted) return;
-      if (isActiveStudent(result.data)) clearPreview();
+      setSessionError(null);
       setState(isActiveStudent(result.data)
         ? { status: 'authenticated', user: result.data }
         : { status: 'unauthenticated', user: null });
-    }).catch(() => {
-      if (mounted) setState({ status: 'unauthenticated', user: null });
+    }).catch((cause: unknown) => {
+      if (mounted) {
+        setSessionError(cause instanceof Error ? cause.message : 'Không thể xác nhận phiên đăng nhập.');
+        setState({ status: 'unauthenticated', user: null });
+      }
     });
     return () => { mounted = false; };
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
     authDevLog('signIn started');
+    setSessionError(null);
     const result = await login(email, password);
     if (!isActiveStudent(result.data)) {
       authDevLog('Navigation ineligible: student');
@@ -55,10 +59,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       throw new ApiError('Không xác nhận được phiên đăng nhập sinh viên.');
     }
     authDevLog('Navigation eligible: student');
-    clearPreview();
+    setSessionError(null);
     setState({ status: 'authenticated', user: verified.data });
     authDevLog('Auth state updated: authenticated');
-  }, [clearPreview]);
+  }, []);
 
   const signOut = useCallback(async () => {
     await logout();
@@ -69,16 +73,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const recheckSession = useCallback(async () => {
     try {
       const result = await getMe();
-      if (isActiveStudent(result.data)) clearPreview();
+      setSessionError(null);
       setState(isActiveStudent(result.data)
         ? { status: 'authenticated', user: result.data }
         : { status: 'unauthenticated', user: null });
-    } catch {
+    } catch (cause) {
+      setSessionError(cause instanceof Error ? cause.message : 'Không thể xác nhận phiên đăng nhập.');
       setState({ status: 'unauthenticated', user: null });
     }
-  }, [clearPreview]);
+  }, []);
 
-  return <AuthContext.Provider value={{ ...state, signIn, signOut, recheckSession }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ ...state, sessionError, signIn, signOut, recheckSession }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

@@ -5,16 +5,12 @@ import { SplashScreen } from '../screens/SplashScreen';
 import type { RootStackParamList } from '../types/navigation';
 import { GuestStack } from './GuestStack';
 import { StudentTabs } from './StudentTabs';
-import { ChatStack } from './ChatStack';
-import { useMockAccount } from '../context/MockAccountContext';
 import { useAuth } from '../context/AuthContext';
-import { devPreviewEnabled } from '../config/devPreview';
 import { authDevLog } from '../utils/authDiagnostics';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootStack() {
-  const { accountId, postLogoutDestination } = useMockAccount();
   const auth = useAuth();
   const [introComplete, setIntroComplete] = useState(false);
   useEffect(() => {
@@ -23,15 +19,9 @@ export function RootStack() {
   }, []);
   const mode = !introComplete || auth.status === 'loading'
     ? 'splash'
-    : auth.status === 'authenticated'
-      ? 'student'
-      : devPreviewEnabled && accountId
-        ? `preview-${accountId}`
-        : 'guest';
+    : auth.status === 'authenticated' ? 'student' : 'guest';
   useEffect(() => {
-    authDevLog(mode.startsWith('preview-')
-      ? 'Navigation mode: preview'
-      : mode === 'student'
+    authDevLog(mode === 'student'
         ? 'Navigation mode: student'
         : mode === 'guest'
           ? 'Navigation mode: guest'
@@ -40,9 +30,8 @@ export function RootStack() {
   return (
     <Stack.Navigator key={mode} screenOptions={{ headerShown: false }}>
       {mode === 'splash' ? <Stack.Screen name="Splash" component={SplashScreen} /> : null}
-      {mode === 'guest' ? <Stack.Screen name="Guest" component={GuestStack} initialParams={postLogoutDestination === 'PasswordChangeSuccess' ? { screen: 'PasswordChangeSuccess' } : undefined} /> : null}
-      {mode === 'student' || mode.startsWith('preview-') ? <Stack.Screen name="Student" component={StudentTabs} /> : null}
-      {mode.startsWith('preview-') ? <Stack.Screen name="Chat" component={ChatStack} /> : null}
+      {mode === 'guest' ? <Stack.Screen name="Guest" component={GuestStack} /> : null}
+      {mode === 'student' ? <Stack.Screen name="Student" component={StudentTabs} /> : null}
     </Stack.Navigator>
   );
 }

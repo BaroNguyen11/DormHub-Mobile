@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { XStack, YStack } from 'tamagui';
 
@@ -9,21 +10,35 @@ import { ApplicationRoomCard } from '../components/ui/ApplicationRoomCard';
 import { AppButton } from '../components/ui/AppButton';
 import { ResidenceHeader, SurfaceCard } from '../components/ui/ResidenceUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
-import { useResidence } from '../context/ResidenceContext';
 import { colors, radius, typography } from '../theme';
 import type { ResidenceStackParamList } from '../types/navigation';
+import { cancelDormApplication, getMyDormApplications } from '../api/residence';
+import type { DormApplicationDto } from '../api/residence';
+import { ApiError } from '../api/httpClient';
+import { useResidence } from '../context/ResidenceContext';
 
 export function RequestStatusScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ResidenceStackParamList>>();
-  const { session, application, cancelApplication } = useResidence();
-  if (!application || (session.status !== 'pending' && session.status !== 'rejected')) return <ScreenContainer><Text style={styles.missing}>Không có yêu cầu đăng ký.</Text></ScreenContainer>;
-  const rejected = session.status === 'rejected';
-  const cancel = () => Alert.alert('Hủy yêu cầu', 'Bạn muốn hủy yêu cầu đăng ký phòng?', [{ text: 'Giữ lại', style: 'cancel' }, { text: 'Hủy yêu cầu', style: 'destructive', onPress: () => { cancelApplication(); navigation.replace('FindRoom'); } }]);
+  const { refreshResidence } = useResidence();
+  const [remoteApplication, setRemoteApplication] = useState<DormApplicationDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+  const [reload, setReload] = useState(0);
+  useEffect(() => { let active = true; setLoading(true); setError(undefined); getMyDormApplications().then((result) => { if (active) setRemoteApplication(result.data.content.find((item) => ['PENDING', 'APPROVED', 'REJECTED'].includes(item.status)) ?? null); }).catch((cause: unknown) => { if (active) setError(cause instanceof ApiError ? cause.message : 'Không tải được trạng thái đăng ký.'); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [reload]);
+  const status = remoteApplication?.status === 'PENDING' ? 'pending' : remoteApplication?.status === 'REJECTED' ? 'rejected' : remoteApplication?.status === 'APPROVED' ? 'approved' : 'none';
+  const createdAt = remoteApplication ? new Date(remoteApplication.requestDate) : null;
+  const displayApplication = remoteApplication ? { id: remoteApplication.id, roomId: remoteApplication.requestedRoomNumber, sentDate: createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toLocaleDateString('vi-VN') : '', sentTime: createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '', status: remoteApplication.status, rejectionReason: remoteApplication.reviewNote ?? undefined } : null;
+  if (loading) return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Trạng thái đăng ký" onBack={() => navigation.goBack()} /><Text style={styles.missing}>Đang tải trạng thái đăng ký...</Text></ScreenContainer>;
+  if (error) return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Trạng thái đăng ký" onBack={() => navigation.goBack()} /><Text style={styles.missing}>{error}</Text><Pressable onPress={() => setReload((value) => value + 1)}><Text style={styles.cancelText}>Thử lại</Text></Pressable></ScreenContainer>;
+  if (!displayApplication || !['pending', 'rejected', 'approved'].includes(status)) return <ScreenContainer><Text style={styles.missing}>Không có yêu cầu đăng ký.</Text></ScreenContainer>;
+  const rejected = status === 'rejected';
+  const approved = status === 'approved';
+  const cancel = () => Alert.alert('Hủy yêu cầu', 'Bạn muốn hủy yêu cầu đăng ký phòng?', [{ text: 'Giữ lại', style: 'cancel' }, { text: 'Hủy yêu cầu', style: 'destructive', onPress: async () => { try { if (remoteApplication) await cancelDormApplication(remoteApplication.id); await refreshResidence(); navigation.replace('Residence'); } catch (cause) { setError(cause instanceof ApiError ? cause.message : 'Không thể hủy yêu cầu.'); } } }]);
   return <ScreenContainer><StatusBar style="dark" /><ResidenceHeader title="Trạng thái đăng ký" onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-    <ApplicationRoomCard roomId={application.roomId} subtitle={`Gửi lúc ${application.sentTime}, ${application.sentDate}`} />
-    <SurfaceCard style={styles.timeline}><View style={styles.line} /><XStack style={styles.step}><YStack style={[styles.stepIcon, styles.done]}><Feather name="check" size={16} color={colors.surface} /></YStack><YStack><Text style={styles.stepTitle}>Đã gửi yêu cầu</Text><Text style={styles.stepSubtitle}>{application.sentDate} · {application.sentTime}</Text></YStack></XStack><XStack style={styles.step}><YStack style={[styles.stepIcon, rejected ? styles.rejected : styles.pending]}><Feather name={rejected ? 'x' : 'clock'} size={16} color={colors.surface} /></YStack><YStack style={styles.stepCopy}><Text style={styles.stepTitle}>{rejected ? 'Từ chối' : 'Chờ duyệt'}</Text><Text style={styles.stepSubtitle}>{rejected ? `${application.decisionDate} · ${application.decisionTime}` : 'Manager đang xem xét yêu cầu của bạn'}</Text></YStack></XStack>{!rejected ? <XStack style={styles.step}><YStack style={[styles.stepIcon, styles.future]} /><Text style={styles.futureText}>Đã duyệt</Text></XStack> : null}</SurfaceCard>
-    {rejected && application.rejectionReason ? <XStack style={styles.reason}><Feather name="alert-triangle" size={17} color={colors.error} /><Text style={styles.reasonText}><Text style={styles.reasonBold}>Lý do: </Text>{application.rejectionReason}</Text></XStack> : null}
-    {rejected ? <AppButton title="Tìm phòng khác" onPress={() => { cancelApplication(); navigation.replace('FindRoom'); }} /> : <Pressable style={styles.cancel} onPress={cancel}><Text style={styles.cancelText}>Hủy yêu cầu</Text></Pressable>}
+    <ApplicationRoomCard roomId={displayApplication.roomId} subtitle={`Gửi lúc ${displayApplication.sentTime}, ${displayApplication.sentDate}`} />
+    <SurfaceCard style={styles.timeline}><View style={styles.line} /><XStack style={styles.step}><YStack style={[styles.stepIcon, styles.done]}><Feather name="check" size={16} color={colors.surface} /></YStack><YStack><Text style={styles.stepTitle}>Đã gửi yêu cầu</Text><Text style={styles.stepSubtitle}>{displayApplication.sentDate} · {displayApplication.sentTime}</Text></YStack></XStack><XStack style={styles.step}><YStack style={[styles.stepIcon, rejected ? styles.rejected : approved ? styles.done : styles.pending]}><Feather name={rejected ? 'x' : approved ? 'check' : 'clock'} size={16} color={colors.surface} /></YStack><YStack style={styles.stepCopy}><Text style={styles.stepTitle}>{rejected ? 'Từ chối' : approved ? 'Đã duyệt' : 'Chờ duyệt'}</Text><Text style={styles.stepSubtitle}>{rejected ? 'Yêu cầu không được chấp thuận' : approved ? 'Yêu cầu đã được chấp thuận' : 'Manager đang xem xét yêu cầu của bạn'}</Text></YStack></XStack>{!rejected && !approved ? <XStack style={styles.step}><YStack style={[styles.stepIcon, styles.future]} /><Text style={styles.futureText}>Đã duyệt</Text></XStack> : null}</SurfaceCard>
+    {rejected && displayApplication.rejectionReason ? <XStack style={styles.reason}><Feather name="alert-triangle" size={17} color={colors.error} /><Text style={styles.reasonText}><Text style={styles.reasonBold}>Lý do: </Text>{displayApplication.rejectionReason}</Text></XStack> : null}
+    {rejected ? <AppButton title="Tìm phòng khác" onPress={() => navigation.replace('FindRoom')} /> : !approved ? <Pressable style={styles.cancel} onPress={cancel}><Text style={styles.cancelText}>Hủy yêu cầu</Text></Pressable> : <AppButton title="Xem trạng thái phòng" onPress={() => navigation.replace('Residence')} />}
   </ScrollView></ScreenContainer>;
 }
 const styles = StyleSheet.create({

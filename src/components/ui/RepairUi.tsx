@@ -3,28 +3,28 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet } from 'react-native';
 import { Text as TamaText, XStack, YStack } from 'tamagui';
-import { repairCategories, repairPriorities, repairStatusLabels } from '../../mocks/repairs';
+import { repairCategories, repairPriorities, repairStatusLabels } from '../../constants/repair';
 import { colors, radius, typography } from '../../theme';
 import type { RepairCategory, RepairRequest } from '../../types/repair';
 
-const icons = { ELECTRIC: 'zap', WATER: 'droplet', AIR_CONDITIONER: 'wind', FURNITURE: 'inbox', ROOM: 'home', OTHER: 'tool' } as const;
+const icons = { FAN: 'wind', AIR_CONDITIONER: 'wind', REFRIGERATOR: 'box', LIGHTING: 'zap', PLUMBING: 'droplet', FURNITURE: 'inbox', DOOR_WINDOW: 'home', OTHER: 'tool' } as const;
 
 export function RepairCategoryIcon({ category, status }: { category: RepairCategory; status?: RepairRequest['status'] }) {
-  const cancelled = status === 'CANCELLED';
-  const background = cancelled ? colors.rejectionBackground : category === 'ELECTRIC' ? colors.limitedBackground : category === 'WATER' ? colors.waterIconBackground : category === 'AIR_CONDITIONER' ? colors.fullBackground : colors.availableBackground;
-  const color = cancelled ? colors.error : category === 'ELECTRIC' ? colors.limitedText : category === 'WATER' ? colors.repairProgressText : category === 'AIR_CONDITIONER' ? colors.textSecondary : colors.availableText;
+  const cancelled = status === 'REJECTED';
+  const background = cancelled ? colors.rejectionBackground : category === 'LIGHTING' ? colors.limitedBackground : category === 'PLUMBING' ? colors.waterIconBackground : category === 'AIR_CONDITIONER' ? colors.fullBackground : colors.availableBackground;
+  const color = cancelled ? colors.error : category === 'LIGHTING' ? colors.limitedText : category === 'PLUMBING' ? colors.repairProgressText : category === 'AIR_CONDITIONER' ? colors.textSecondary : colors.availableText;
   return <YStack style={[styles.categoryIcon, { backgroundColor: background }]}><Feather name={icons[category]} size={20} color={color} /></YStack>;
 }
 
 export function RepairStatusBadge({ status }: { status: RepairRequest['status'] }) {
-  const background = status === 'IN_PROGRESS' ? colors.repairProgressBackground : status === 'RECEIVED' ? colors.limitedBackground : status === 'COMPLETED' ? colors.availableBackground : colors.fullBackground;
-  const color = status === 'IN_PROGRESS' ? colors.repairProgressText : status === 'RECEIVED' ? colors.limitedText : status === 'COMPLETED' ? colors.availableText : colors.textSecondary;
+  const background = status === 'IN_PROGRESS' ? colors.repairProgressBackground : status === 'PENDING' ? colors.limitedBackground : status === 'COMPLETED' ? colors.availableBackground : colors.fullBackground;
+  const color = status === 'IN_PROGRESS' ? colors.repairProgressText : status === 'PENDING' ? colors.limitedText : status === 'COMPLETED' ? colors.availableText : colors.textSecondary;
   return <XStack style={[styles.badge, { backgroundColor: background }]}><TamaText style={[styles.badgeText, { color }]}>{repairStatusLabels[status]}</TamaText></XStack>;
 }
 
 export function RepairRequestRow({ request, variant, onPress }: { request: RepairRequest; variant: 'current' | 'history'; onPress?: () => void }) {
   const priority = repairPriorities.find((item) => item.id === request.priority)?.label.toLowerCase();
-  const subtitle = variant === 'current' ? `${request.id} · ${request.createdDate}` : request.status === 'CANCELLED' ? `${request.createdDate} · Đã hủy` : `${request.createdDate} · Ưu tiên ${priority}`;
+  const subtitle = variant === 'current' ? `${request.id} · ${request.createdDate}` : request.status === 'REJECTED' ? `${request.createdDate} · Đã từ chối` : `${request.createdDate} · Ưu tiên ${priority}`;
   return <Pressable disabled={!onPress} onPress={onPress} style={styles.row}><RepairCategoryIcon category={request.category} status={request.status} /><YStack style={styles.rowCopy}><TamaText style={styles.rowTitle} numberOfLines={2}>{request.title}</TamaText><TamaText style={styles.rowSubtitle}>{subtitle}</TamaText></YStack><RepairStatusBadge status={request.status} /></Pressable>;
 }
 

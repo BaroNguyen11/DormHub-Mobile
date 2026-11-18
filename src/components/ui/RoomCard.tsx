@@ -4,10 +4,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Card } from 'tamagui';
 
 import { colors, radius, typography } from '../../theme';
-import type { RoomPreview } from '../../types/room';
+import type { RoomListItem } from '../../types/room';
 import { StatusBadge } from './StatusBadge';
 
-interface Props { room: RoomPreview; onPress: () => void }
+interface Props { room: RoomListItem; onPress: () => void }
 
 export function RoomCard({ room, onPress }: Props) {
   const available = room.capacity - room.occupied;

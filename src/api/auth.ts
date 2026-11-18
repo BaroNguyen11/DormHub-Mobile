@@ -5,6 +5,26 @@ import { authDevLog } from '../utils/authDiagnostics';
 
 export type AuthUser = AuthUserResponse;
 
+export function registerAccount(body: { username: string; email: string; password: string; fullName: string; phoneNumber: string; studentCode: string }) {
+  return apiRequest<{ userId: number; username: string; email: string; fullName: string; status: string }>('/api/v1/auth/register', { method: 'POST', body, retryOnUnauthorized: false });
+}
+
+export function requestPasswordReset(email: string) {
+  return apiRequest<null>('/api/v1/auth/forgot-password', { method: 'POST', body: { email: email.trim() }, retryOnUnauthorized: false });
+}
+
+export function resendActivationOtp(email: string) {
+  return apiRequest<null>('/api/v1/auth/resend-otp', { method: 'POST', body: { email: email.trim() }, retryOnUnauthorized: false });
+}
+
+export function verifyActivationOtp(email: string, otp: string) {
+  return apiRequest<null>('/api/v1/auth/verify-email', { method: 'POST', body: { email: email.trim(), otp: otp.trim() }, retryOnUnauthorized: false });
+}
+
+export function resetPassword(email: string, otp: string, newPassword: string) {
+  return apiRequest<null>('/api/v1/auth/reset-password', { method: 'POST', body: { email: email.trim(), otp, newPassword }, retryOnUnauthorized: false });
+}
+
 export async function login(email: string, password: string) {
   try {
     return await loginSession(email, password);

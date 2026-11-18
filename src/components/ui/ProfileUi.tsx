@@ -6,7 +6,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Text as TamaText, YStack } from 'tamagui';
 
 import { colors, radius, typography } from '../../theme';
-import type { AccountProfile } from '../../types/profile';
 
 type IconName = ComponentProps<typeof Feather>['name'];
 
@@ -20,7 +19,7 @@ export function validRemoteAvatarUrl(value: string | null | undefined): string |
   }
 }
 
-export function ProfileAvatar({ profile, size, camera = false }: { profile: Pick<AccountProfile, 'fullName' | 'avatarUri'>; size: number; camera?: boolean }) {
+export function ProfileAvatar({ profile, size, camera = false }: { profile: { fullName: string; avatarUri?: string | null }; size: number; camera?: boolean }) {
   const [failedUri, setFailedUri] = useState<string | null>(null);
   const imageUri = profile.avatarUri && profile.avatarUri !== failedUri ? profile.avatarUri : null;
   const names = profile.fullName.trim().split(/\s+/).filter(Boolean);

@@ -11,10 +11,8 @@ import { ProfileAvatar, ProfileMenuRow, validRemoteAvatarUrl } from '../componen
 import { getStudentProfile } from '../api/studentProfile';
 import { SurfaceCard } from '../components/ui/ResidenceUi';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
-import { useMockAccount } from '../context/MockAccountContext';
 import { useAuth } from '../context/AuthContext';
 import { useResidence } from '../context/ResidenceContext';
-import { residentRoom } from '../mocks/residence';
 import { colors, typography } from '../theme';
 import type { ProfileStackParamList, StudentTabsParamList } from '../types/navigation';
 import type { StudentProfile } from '../types/studentProfile';
@@ -22,7 +20,6 @@ import type { StudentProfile } from '../types/studentProfile';
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>;
 
 export function ProfileScreen({ navigation }: Props) {
-  const { profile, logout: logoutPreview } = useMockAccount();
   const auth = useAuth();
   const realUser = auth.status === 'authenticated' ? auth.user : null;
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
@@ -45,34 +42,33 @@ export function ProfileScreen({ navigation }: Props) {
   const { session } = useResidence();
   const tabs = navigation.getParent<BottomTabNavigationProp<StudentTabsParamList>>();
   const hasRoom = session.status === 'active' && !!session.roomId;
-  const unavailable = () => Alert.alert('Chưa hỗ trợ', realUser ? 'Chức năng này chưa được kết nối với Backend.' : 'Mục này chưa có trong bản xem thử.');
   const signOut = async () => {
     if (signingOut) return;
-    if (!realUser) { logoutPreview(); return; }
+    if (!realUser) return;
     setSigningOut(true);
     try { await auth.signOut(); }
     catch { Alert.alert('Không thể đăng xuất', 'Vui lòng kiểm tra kết nối và thử lại.'); }
     finally { setSigningOut(false); }
   };
 
-  if (!profile && !realUser) return <ScreenContainer><Text style={styles.missing}>Không có thông tin tài khoản.</Text></ScreenContainer>;
+  if (!realUser) return <ScreenContainer><Text style={styles.missing}>Không có thông tin tài khoản.</Text></ScreenContainer>;
 
-  const displayName = realUser ? studentProfile?.fullName || realUser.fullName || 'Chưa cập nhật tên' : profile?.fullName || 'Chưa cập nhật tên';
-  const displayEmail = realUser ? studentProfile?.email || realUser.email : profile?.email;
-  const studentCode = realUser ? studentProfile?.studentCode || 'Chưa cập nhật MSSV' : profile?.studentId ?? 'Chưa cập nhật';
+  const displayName = studentProfile?.fullName || realUser.fullName || 'Chưa cập nhật tên';
+  const displayEmail = studentProfile?.email || realUser.email;
+  const studentCode = studentProfile?.studentCode || 'Chưa cập nhật MSSV';
 
   return <ScreenContainer>
     <StatusBar style="dark" />
     <YStack style={styles.header}><TamaText style={styles.headerTitle}>Cá nhân</TamaText></YStack>
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {realUser && profileLoading ? <Text style={styles.stateText}>Đang tải hồ sơ...</Text> : null}
-      {realUser && profileError ? <View style={styles.stateRow}><Text style={styles.errorText}>{profileError}</Text><Pressable accessibilityRole="button" onPress={() => setReloadKey((key) => key + 1)}><Text style={styles.retryText}>Thử lại</Text></Pressable></View> : null}
-      {realUser && !profileLoading && !profileError && !studentProfile ? <Text style={styles.stateText}>Chưa có hồ sơ sinh viên.</Text> : null}
+      {profileLoading ? <Text style={styles.stateText}>Đang tải hồ sơ...</Text> : null}
+      {profileError ? <View style={styles.stateRow}><Text style={styles.errorText}>{profileError}</Text><Pressable accessibilityRole="button" onPress={() => setReloadKey((key) => key + 1)}><Text style={styles.retryText}>Thử lại</Text></Pressable></View> : null}
+      {!profileLoading && !profileError && !studentProfile ? <Text style={styles.stateText}>Chưa có hồ sơ sinh viên.</Text> : null}
       <Pressable accessibilityRole="button" onPress={() => navigation.navigate('EditProfile')} style={styles.identity}>
-        {realUser ? <ProfileAvatar profile={{ fullName: displayName, avatarUri: validRemoteAvatarUrl(studentProfile?.avatarUrl) }} size={60} /> : profile ? <ProfileAvatar profile={profile} size={60} /> : null}
+        <ProfileAvatar profile={{ fullName: displayName, avatarUri: validRemoteAvatarUrl(studentProfile?.avatarUrl) }} size={60} />
         <YStack style={styles.identityCopy}>
           <Text style={styles.name}>{displayName}</Text>
-          <Text style={styles.studentMeta}>{realUser ? `MSSV: ${studentCode} · Tài khoản đang hoạt động` : `MSSV: ${studentCode} · SV Approved`}</Text>
+          <Text style={styles.studentMeta}>MSSV: {studentCode} · Tài khoản đang hoạt động</Text>
         </YStack>
         <Feather name="chevron-right" size={20} color={colors.inactiveTab} />
       </Pressable>
@@ -80,7 +76,7 @@ export function ProfileScreen({ navigation }: Props) {
       <TamaText style={styles.sectionTitle}>Thông tin cá nhân</TamaText>
       <SurfaceCard style={styles.card}>
         <ProfileMenuRow icon="mail" title="Email" subtitle={displayEmail} />
-        <ProfileMenuRow icon="phone" title="Số điện thoại" subtitle={realUser ? studentProfile?.phone || (profileError ? 'Chưa tải được' : 'Chưa cập nhật') : profile?.phone || 'Chưa cập nhật'} />
+        <ProfileMenuRow icon="phone" title="Số điện thoại" subtitle={studentProfile?.phone || (profileError ? 'Chưa tải được' : 'Chưa cập nhật')} />
         <Pressable accessibilityRole="button" onPress={() => navigation.navigate('EditProfile')} style={styles.editRow}>
           <Text style={styles.editText}>Chỉnh sửa thông tin</Text>
           <Feather name="chevron-right" size={20} color={colors.inactiveTab} />
@@ -90,13 +86,12 @@ export function ProfileScreen({ navigation }: Props) {
       <TamaText style={styles.sectionTitle}>Tài khoản</TamaText>
       <SurfaceCard style={styles.card}>
         <ProfileMenuRow icon="lock" title="Đổi mật khẩu" onPress={() => navigation.navigate('ChangePassword')} />
-        <ProfileMenuRow icon="bell" title="Cài đặt thông báo" onPress={unavailable} />
-        <ProfileMenuRow icon="shield" title="Bảo mật" onPress={unavailable} last />
+        <ProfileMenuRow icon="shield" title="Bảo mật tài khoản" subtitle="Đổi mật khẩu và bảo vệ tài khoản" last />
       </SurfaceCard>
 
       <TamaText style={styles.sectionTitle}>Ký túc xá</TamaText>
       <SurfaceCard style={styles.card}>
-        <ProfileMenuRow icon="inbox" title="Phòng hiện tại" subtitle={hasRoom ? `${session.roomId} · ${residentRoom.building}` : 'Chưa có phòng hiện tại'} onPress={() => tabs?.navigate('Room', { screen: hasRoom ? 'MyRoom' : 'Residence' })} />
+        <ProfileMenuRow icon="inbox" title="Phòng hiện tại" subtitle={hasRoom ? `${session.room?.roomNumber ?? session.roomId} · ${session.room?.buildingName ?? ''}` : 'Chưa có phòng hiện tại'} onPress={() => tabs?.navigate('Room', { screen: hasRoom ? 'MyRoom' : 'Residence' })} />
         <ProfileMenuRow icon="file-text" title="Hợp đồng" subtitle={hasRoom ? undefined : 'Chưa có hợp đồng'} onPress={hasRoom ? () => tabs?.navigate('Room', { screen: 'Contract' }) : undefined} last />
       </SurfaceCard>
 

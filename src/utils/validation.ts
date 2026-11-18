@@ -1,5 +1,5 @@
 import type { LoginForm, RegisterForm } from '../types/auth';
-import type { ChangePasswordForm, ProfileEditForm } from '../types/profile';
+import type { ChangePasswordForm } from '../types/profile';
 import type { FieldErrors } from '../types/validation';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,10 +17,8 @@ export function validateRegister(form: RegisterForm): FieldErrors<keyof Register
   if (!form.fullName.trim()) errors.fullName = 'Vui lòng nhập họ và tên';
   if (!emailPattern.test(form.email.trim())) errors.email = 'Email không hợp lệ';
   if (!phonePattern.test(form.phone.replace(/[\s.-]/g, ''))) errors.phone = 'Số điện thoại không hợp lệ';
-  if (!/^\d{12}$/.test(form.identityNumber.trim())) errors.identityNumber = 'CCCD phải gồm 12 chữ số';
-  if (!form.identityFrontUri) errors.identityFrontUri = 'Vui lòng chọn ảnh mặt trước CCCD';
-  if (!form.identityBackUri) errors.identityBackUri = 'Vui lòng chọn ảnh mặt sau CCCD';
-  if (!form.username.trim()) errors.username = 'Vui lòng nhập username';
+  if (!/^\d{8}$/.test(form.studentCode.trim())) errors.studentCode = 'Mã sinh viên phải gồm đúng 8 chữ số';
+  if (form.username.trim().length < 3 || form.username.trim().length > 30) errors.username = 'Username phải từ 3 đến 30 ký tự';
   if (form.password.length < 8) errors.password = 'Mật khẩu cần ít nhất 8 ký tự';
   if (form.confirmPassword !== form.password) errors.confirmPassword = 'Mật khẩu xác nhận không khớp';
   if (!form.acceptedTerms) errors.acceptedTerms = 'Vui lòng đồng ý với điều khoản';
@@ -39,14 +37,6 @@ export function validateNewPassword(password: string, confirmation: string): Fie
   const errors: FieldErrors<'password' | 'confirmation'> = {};
   if (password.length < 8) errors.password = 'Mật khẩu cần ít nhất 8 ký tự';
   if (confirmation !== password) errors.confirmation = 'Mật khẩu xác nhận không khớp';
-  return errors;
-}
-
-export function validateProfileEdit(form: ProfileEditForm): FieldErrors<'fullName' | 'email' | 'phone'> {
-  const errors: FieldErrors<'fullName' | 'email' | 'phone'> = {};
-  if (!form.fullName.trim()) errors.fullName = 'Vui lòng nhập họ và tên';
-  if (!emailPattern.test(form.email.trim())) errors.email = 'Email không hợp lệ';
-  if (!phonePattern.test(form.phone.replace(/[\s.-]/g, ''))) errors.phone = 'Số điện thoại không hợp lệ';
   return errors;
 }
 

@@ -1,8 +1,8 @@
-// Frontend mock view models, not Spring Boot DTOs.
+// UI models mapped from the invoice and payment APIs.
 export type InvoiceStatus = 'UNPAID' | 'PAID' | 'CANCELLED';
-export type InvoiceKind = 'ROOM';
+export type InvoiceKind = 'ROOM' | 'DEPOSIT';
 export type PaymentMethod = 'VNPAY' | 'SEPAY';
-export type PaymentStatus = 'SUCCESS' | 'FAILED';
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
 
 export interface InvoiceLineItem { id: string; label: string; amount: number }
 export interface Invoice {
@@ -10,7 +10,7 @@ export interface Invoice {
   kind: InvoiceKind;
   period: string;
   title: string;
-  dueDate: string; // YYYY-MM-DD, mock calendar day.
+  dueDate: string; // YYYY-MM-DD.
   status: InvoiceStatus;
   lineItems: readonly InvoiceLineItem[];
   totalAmount: number;
