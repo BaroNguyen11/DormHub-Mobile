@@ -4,8 +4,6 @@ import { ExploreScreen } from '../screens/ExploreScreen';
 import { FilterScreen } from '../screens/FilterScreen';
 import { RoomDetailScreen } from '../screens/RoomDetailScreen';
 import { LoginScreen } from '../screens/LoginScreen';
-import { RegisterScreen } from '../screens/RegisterScreen';
-import { RegisterSuccessScreen } from '../screens/RegisterSuccessScreen';
 import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
 import { OtpConfirmScreen } from '../screens/OtpConfirmScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
@@ -25,8 +23,6 @@ export function GuestStack() {
       <Stack.Screen name="Filter" component={FilterScreen} options={{ presentation: 'transparentModal', animation: 'fade' }} />
       <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="RegisterSuccess" component={RegisterSuccessScreen} />
       <Stack.Screen name="ActivateAccount" component={ActivateAccountScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="OtpConfirm" component={OtpConfirmScreen} />

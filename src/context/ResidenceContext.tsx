@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { getMyAssignments, getMyDormApplications } from '../api/residence';
 import { listContracts, listCheckoutRequests } from '../api/student';
@@ -37,29 +37,47 @@ export function ResidenceProvider({ children }: PropsWithChildren) {
   const [application, setApplication] = useState<RoomApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const initialized = useRef(false);
+  const sessionStatus = useRef(session.status);
+  sessionStatus.current = session.status;
   const refreshResidence = useCallback(async () => {
     if (auth.status !== 'authenticated') {
       setSession({ status: 'none', roomId: null });
       setApplication(null);
       setError(null);
       setLoading(auth.status === 'loading');
+      initialized.current = auth.status !== 'loading';
       return;
     }
-    setLoading(true);
+    if (!initialized.current) setLoading(true);
     setError(null);
+    let loadedSuccessfully = false;
     try {
-      const [assignmentsResult, applicationsResult, contractsResult, checkoutResult] = await Promise.all([getMyAssignments(), getMyDormApplications(), listContracts(), listCheckoutRequests()]);
-      const active = assignmentsResult.data.content.find((item) => ['ASSIGNED', 'CHECKED_IN'].includes(item.assignmentStatus));
-      const currentApplication = applicationsResult.data.content.find((item) => ['PENDING', 'REJECTED', 'APPROVED'].includes(item.status)) ?? null;
-      const currentContract = contractsResult.data.content.find((item) => ['PENDING', 'ACTIVE', 'EXPIRED'].includes(item.status)) ?? null;
-      const openCheckout = checkoutResult.data.content.find((item) => ['PENDING', 'APPROVED'].includes(item.status));
-      setSession(active
-        ? { status: openCheckout ? 'checkoutPending' : 'active', roomId: String(active.roomNumber), room: active }
-        : { status: currentApplication?.status === 'REJECTED' ? 'rejected' : currentApplication?.status === 'APPROVED' ? 'approved' : currentApplication ? 'pending' : currentContract ? 'approved' : 'none', roomId: currentApplication ? String(currentApplication.requestedRoomNumber) : currentContract?.roomNumber ?? null });
-      setApplication(currentApplication ? appView(currentApplication) : null);
+      const [assignmentsResult, applicationsResult, contractsResult, checkoutResult] = await Promise.allSettled([getMyAssignments(), getMyDormApplications(), listContracts(), listCheckoutRequests()]);
+      if (assignmentsResult.status === 'rejected') throw assignmentsResult.reason;
+      const active = assignmentsResult.value.data.content.find((item) => ['ASSIGNED', 'CHECKED_IN'].includes(item.assignmentStatus));
+      if (active) {
+        const openCheckout = checkoutResult.status === 'fulfilled' ? checkoutResult.value.data.content.find((item) => ['PENDING', 'APPROVED'].includes(item.status)) : null;
+        setSession({ status: openCheckout || (checkoutResult.status === 'rejected' && sessionStatus.current === 'checkoutPending') ? 'checkoutPending' : 'active', roomId: String(active.roomNumber), room: active });
+        if (applicationsResult.status === 'fulfilled') {
+          const currentApplication = applicationsResult.value.data.content.find((item) => ['PENDING', 'REJECTED', 'APPROVED'].includes(item.status)) ?? null;
+          setApplication(currentApplication ? appView(currentApplication) : null);
+        }
+      } else {
+        if (applicationsResult.status === 'rejected') throw applicationsResult.reason;
+        const currentApplication = applicationsResult.value.data.content.find((item) => ['PENDING', 'REJECTED', 'APPROVED'].includes(item.status)) ?? null;
+        const currentContract = contractsResult.status === 'fulfilled' ? contractsResult.value.data.content.find((item) => ['PENDING', 'ACTIVE', 'EXPIRED'].includes(item.status)) ?? null : null;
+        setSession({
+          status: currentApplication?.status === 'REJECTED' ? 'rejected' : currentApplication?.status === 'APPROVED' ? 'approved' : currentApplication ? 'pending' : currentContract ? 'approved' : 'none',
+          roomId: currentApplication ? String(currentApplication.requestedRoomNumber) : currentContract?.roomNumber ?? null,
+        });
+        setApplication(currentApplication ? appView(currentApplication) : null);
+      }
+      loadedSuccessfully = true;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không tải được thông tin lưu trú.');
+      if (!initialized.current) setError(cause instanceof Error ? cause.message : 'Không tải được thông tin lưu trú.');
     } finally {
+      if (loadedSuccessfully) initialized.current = true;
       setLoading(false);
     }
   }, [auth.status, auth.status === 'authenticated' ? auth.user.userId : null]);

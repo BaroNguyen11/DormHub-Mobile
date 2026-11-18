@@ -28,8 +28,7 @@ export function WelcomeScreen({ navigation }: Props) {
         <YStack style={styles.actions}>
           {sessionError ? <Text color={colors.error} fontFamily="body" fontSize={12} textAlign="center">{sessionError}</Text> : null}
           <AppButton title="Đăng nhập" onPress={() => navigation.navigate('Login')} />
-          <AppButton title="Tạo tài khoản" variant="outline" onPress={() => navigation.navigate('Register')} />
-          <AppButton title="Kích hoạt tài khoản" variant="text" onPress={() => navigation.navigate('ActivateAccount')} />
+          <AppButton title="Tài khoản đã được cấp · Kích hoạt email" variant="outline" onPress={() => navigation.navigate('ActivateAccount')} />
           <AppButton title="Khám phá phòng" variant="text" onPress={() => navigation.navigate('Explore')} />
         </YStack>
       </ScrollView>

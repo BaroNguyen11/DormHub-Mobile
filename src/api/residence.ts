@@ -68,3 +68,9 @@ export function getMyDormApplications(page = 0, size = 20) {
 export function cancelDormApplication(applicationId: number) {
   return apiRequest<DormApplicationDto>(`/api/v1/student/dorm-applications/${applicationId}/cancel`, { method: 'PATCH' });
 }
+
+export function changeRequestedRoom(applicationId: number, roomId: string) {
+  const id = Number(roomId);
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Mã phòng không hợp lệ.');
+  return apiRequest<DormApplicationDto>(`/api/v1/student/dorm-applications/${applicationId}/room`, { method: 'PATCH', body: { roomId: id }, csrf: true });
+}

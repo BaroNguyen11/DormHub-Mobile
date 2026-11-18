@@ -24,8 +24,8 @@ export function RoomDetailScreen({ navigation, route }: Props) {
   return <RoomDetailView roomId={route.params.roomId} onBack={() => navigation.goBack()} onApply={() => navigation.navigate('Login')} />;
 }
 
-interface RoomDetailViewProps { roomId: string; onBack: () => void; onApply: () => void; student?: boolean }
-export function RoomDetailView({ roomId, onBack, onApply, student = false }: RoomDetailViewProps) {
+interface RoomDetailViewProps { roomId: string; onBack: () => void; onApply: () => void; student?: boolean; actionTitle?: string }
+export function RoomDetailView({ roomId, onBack, onApply, student = false, actionTitle = 'Đăng ký thuê phòng' }: RoomDetailViewProps) {
   const [room, setRoom] = useState<RoomDetail | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
@@ -60,7 +60,7 @@ export function RoomDetailView({ roomId, onBack, onApply, student = false }: Roo
           {room.rules.length > 0 ? <><View style={styles.divider} /><Text style={styles.sectionTitle}>Nội quy phòng</Text>{room.rules.map((rule) => <View key={rule} style={styles.rule}><View style={styles.bullet} /><Text style={styles.bodyText}>{rule}</Text></View>)}</> : null}
         </YStack>
       </ScrollView>
-      <YStack style={styles.footer}><AppButton title="Đăng ký thuê phòng" disabled={available === 0} onPress={onApply} /></YStack>
+      <YStack style={styles.footer}><AppButton title={available === 0 ? 'Phòng đã hết chỗ' : actionTitle} disabled={available === 0} onPress={onApply} /></YStack>
     </ScreenContainer>
   );
 }

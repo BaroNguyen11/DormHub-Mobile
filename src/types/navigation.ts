@@ -9,8 +9,6 @@ export type GuestStackParamList = {
   RoomDetail: { roomId: string };
   Login: { status?: 'pending' | 'invalid' | 'verified'; message?: string } | undefined;
   ActivateAccount: undefined;
-  Register: undefined;
-  RegisterSuccess: undefined;
   ForgotPassword: undefined;
   OtpConfirm: { email: string };
   ResetPassword: { email: string; otp: string };
@@ -59,9 +57,11 @@ export type ResidenceStackParamList = {
   StudentRoomDetail: { roomId: string };
   RegisterRoom: { roomId: string };
   RequestStatus: undefined;
+  ApplicationHistory: undefined;
+  CheckoutHistory: undefined;
   MyRoom: undefined;
   Contract: undefined;
-  Utilities: undefined;
+  RoomTransfer: undefined;
 };
 
 export type RootStackParamList = {

@@ -92,7 +92,8 @@ export function ProfileScreen({ navigation }: Props) {
       <TamaText style={styles.sectionTitle}>Ký túc xá</TamaText>
       <SurfaceCard style={styles.card}>
         <ProfileMenuRow icon="inbox" title="Phòng hiện tại" subtitle={hasRoom ? `${session.room?.roomNumber ?? session.roomId} · ${session.room?.buildingName ?? ''}` : 'Chưa có phòng hiện tại'} onPress={() => tabs?.navigate('Room', { screen: hasRoom ? 'MyRoom' : 'Residence' })} />
-        <ProfileMenuRow icon="file-text" title="Hợp đồng" subtitle={hasRoom ? undefined : 'Chưa có hợp đồng'} onPress={hasRoom ? () => tabs?.navigate('Room', { screen: 'Contract' }) : undefined} last />
+        <ProfileMenuRow icon="file-text" title="Hợp đồng" subtitle={hasRoom ? undefined : 'Chưa có hợp đồng'} onPress={hasRoom ? () => tabs?.navigate('Room', { screen: 'Contract' }) : undefined} />
+        <ProfileMenuRow icon="log-out" title="Lịch sử trả phòng" onPress={() => tabs?.navigate('Room', { screen: 'CheckoutHistory' })} last />
       </SurfaceCard>
 
       <Pressable accessibilityRole="button" disabled={signingOut} onPress={() => void signOut()} style={styles.logout}>

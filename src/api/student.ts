@@ -39,6 +39,28 @@ export function getCheckoutRequest(id: string) { return apiRequest<CheckoutReque
 export function createCheckoutRequest(reason: string) { return apiRequest<CheckoutRequestDto>('/api/v1/student/checkout-requests', { method: 'POST', body: { reason: reason.trim() }, csrf: true }); }
 export function cancelCheckoutRequest(id: string) { return apiRequest<CheckoutRequestDto>(`/api/v1/student/checkout-requests/${encodeURIComponent(id)}/cancel`, { method: 'PATCH', csrf: true }); }
 
+export interface RoomTransferRequestDto {
+  transferId: number; studentId: number; contractId: number; currentAssignmentId: number; currentRoomId: number;
+  preferredRoomId: number | null; approvedRoomId: number | null; status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  reason: string; requestedAt: string; reviewedById: number | null; reviewedAt: string | null; reviewNote: string | null;
+}
+export function listRoomTransferRequests(page = 0, size = 100) { return apiRequest<PageDto<RoomTransferRequestDto>>(`/api/v1/student/room-transfer-requests?page=${page}&size=${size}`); }
+export function createRoomTransferRequest(reason: string, preferredRoomId?: number) {
+  return apiRequest<RoomTransferRequestDto>('/api/v1/student/room-transfer-requests', { method: 'POST', body: { reason: reason.trim(), ...(preferredRoomId ? { preferredRoomId } : {}) }, csrf: true });
+}
+export function cancelRoomTransferRequest(id: number) { return apiRequest<RoomTransferRequestDto>(`/api/v1/student/room-transfer-requests/${id}/cancel`, { method: 'PATCH', csrf: true }); }
+
+export interface RenewalRequestDto {
+  renewalRequestId: number; contractId: number; studentId: number; requestedEndDate: string; contractEndDate: string;
+  reason: string | null; status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'; requestedAt: string;
+  reviewedById: number | null; reviewedAt: string | null; reviewNote: string | null;
+}
+export function listRenewalRequests(page = 0, size = 100) { return apiRequest<PageDto<RenewalRequestDto>>(`/api/v1/student/renewal-requests?page=${page}&size=${size}`); }
+export function createRenewalRequest(contractId: number, requestedEndDate: string, reason?: string) {
+  return apiRequest<RenewalRequestDto>(`/api/v1/student/contracts/${contractId}/renewal-requests`, { method: 'POST', body: { requestedEndDate, ...(reason?.trim() ? { reason: reason.trim() } : {}) }, csrf: true });
+}
+export function cancelRenewalRequest(id: number) { return apiRequest<RenewalRequestDto>(`/api/v1/student/renewal-requests/${id}/cancel`, { method: 'PATCH', csrf: true }); }
+
 export interface MaintenanceDto {
   id: number; title: string; description: string; status: string; priority: string; type: string;
   imageUrl: string | null; rejectionReason: string | null; roomId: number; createdAt: string; updatedAt: string; resolvedAt: string | null;
